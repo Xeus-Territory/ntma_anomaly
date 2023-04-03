@@ -1,0 +1,17 @@
+version: "3"
+
+networks:
+  application:
+    external: true
+
+services:
+  server:
+    # container_name: nginx-server
+    image: nginx-rebuild:v0.0.1
+    ports:
+      - 80:80
+    networks:
+      - application
+    volumes:
+      - ./log/access.log:/var/log/nginx/access.log
+      - ./log/error.log:/var/log/nginx/error.log
