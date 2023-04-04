@@ -10,6 +10,11 @@ services:
     image: nginx-rebuild:v0.0.1
     ports:
       - 80:80
+    deploy:
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 500M
     networks:
       - application
     volumes:
