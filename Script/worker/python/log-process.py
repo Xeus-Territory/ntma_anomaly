@@ -1,31 +1,71 @@
 import csv
 import re
-from datatime import datatime
+import os
+from datetime import datetime
+import json
 
-# str = r'10.0.0.2 - - [04/Apr/2023:07:11:48 +0000] "GET /js/react-dom.production.min.js HTTP/1.1" 304 0 "http://localhost/" "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/111.0" "-" "localhost" "_" "0.004"'
-
-def generate_csv_log(filenames):
-    log_pattern = re.compile(
-    r'(?P<remote_addr>\d+\.\d+\.\d+\.\d+)\s' 
-    r'(?P<remote_usr>\S+)\s'
-    r'\S+\s'
-    r'\[(?P<time_local>.*?)\]\s' 
-    r'\"(?P<request_method>[A-Z]+)\s'
-    r'(?P<request_url>[^"]+)\s'
-    r'(?P<http_version>HTTP/\d\.\d)\"\s'
-    r'(?P<status>\d+)\s'
-    r'(?P<body_bytes_sent>\d+)\s'
-    r'\"(?P<http_referer>[^"]+)\"\s'
-    r'\"(?P<http_user_agent>[^"]+)\"\s'
-    r'\"(?P<http_x_forwarded_for>[^"]+)\"\s'
-    r'\"(?P<host>[^"]+)\"\s'
-    r'\"(?P<server_name>[^"]+)\"\s'
-    r'\"(?P<request_time>[^"]+)\"'
+def check_pattern_log_datetime(log_file_path):
+    date_arr = []
+    log_arr = []
+    file = open(log_file_path, 'r')
+    reg_log_pattern = re.compile(
+        r'(?P<remote_addr>\d+\.\d+\.\d+\.\d+)\s' # Check remote_addr like 10.0.0.2
+        r'(?P<remote_usr>\S+)\s'                 # Check remote_usr like - -, Get the string inside and if it empty return ""
+        r'\S+\s'                                 # Remove the space before the time_local
+        r'\[(?P<time_local>.*?)\]\s'             # Check time_local like [04/Apr/2023:07:11:48 +0000], return string inside the brackets
+        r'\"(?P<request_method>[A-Z]+)\s'        # Check request method like GET, POST, PUT, DELETE
+        r'(?P<request_url>[^"]+)\s'              # Check request uri like /js/react-dom.production.min.js
+        r'(?P<http_version>HTTP/\d\.\d)\"\s'     # Check http version like HTTP/1.1
+        r'(?P<status>\d+)\s'                     # Check the status respone 304, 200, ...
+        r'(?P<body_bytes_sent>\d+)\s'            # Get the number byte send, for purpose like 0, 255
+        r'\"(?P<http_referer>[^"]+)\"\s'         # Get the http reference like http://localhost/
+        r'\"(?P<http_user_agent>[^"]+)\"\s'      # Get the http user agent like Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/111.0
+        r'\"(?P<http_x_forwarded_for>[^"]+)\"\s' # Get the http x_forwarded_for like ip, ...
+        r'\"(?P<host>[^"]+)\"\s'                 # Get the host for the server like localhost
+        r'\"(?P<server_name>[^"]+)\"\s'          # Get and check server name like _ if null, or something else
+        r'\"(?P<request_time>[^"]+)\"'           # Get request time 
     )
-
-    file = open(filenames, 'r')
     for line in file.readlines():
-        log_filter = log_pattern.match(line)
-        print(log_filter.groupdict()['time_local'])
+        if reg_log_pattern.match(line) is not None:
+            temp = datetime.strptime(reg_log_pattern.match(line).groupdict()['time_local'], "%d/%b/%Y:%H:%M:%S %z").date()
+            if (str(temp) not in date_arr):
+                date_arr.append(str(temp))
+            log_arr.append(reg_log_pattern.match(line).groups())
+
+    file.close()
     
-generate_csv_log("/home/xeusnguyen/NTMA_Anomaly/Infrastructure/docker/log/access.log")
+    return log_arr, date_arr
+
+
+def create_folder_by_datetime(date_arr):
+    path_folder_create = []
+    for date in date_arr:
+        path = "../../../Infrastructure/docker/log/" + date
+        if not os.path.exists(path):
+            os.makedirs(path)
+            path_folder_create.append(path)
+        elif path not in path_folder_create:
+            path_folder_create.append(path)
+        else:
+            continue
+    return path_folder_create
+            
+
+def generate_csv_log(log_file_path, namefile="raw_data.csv"):
+    log_arr, date_arr = check_pattern_log_datetime(log_file_path)
+    folder_store_csv = create_folder_by_datetime(date_arr)
+    for folder_store in folder_store_csv:
+        output = open(folder_store + "/" +namefile, 'w')
+        csv_out = csv.writer(output)
+        csv_out.writerow(['remote_addr', 'remote_usr', 'time_local', 'request_method', 'request_url', 
+                          'http_version', 'status', 'body_bytes_sent', 'http_referer', 'http_user_agent',
+                          'http_x_forwarded_for', 'host', 'server_name', 'request_time'])
+
+        for log in log_arr:
+            if str(datetime.strptime(log[2], "%d/%b/%Y:%H:%M:%S %z").date()) in folder_store:
+                csv_out.writerow(log)
+            else:
+                continue
+        output.close()
+        
+generate_csv_log("../../../Infrastructure/docker/log/access.log")
