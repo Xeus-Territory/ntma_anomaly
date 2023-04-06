@@ -16,6 +16,7 @@ def check_pattern_log_datetime(log_file_path):
         r'\"(?P<request_method>[A-Z]+)\s'        # Check request method like GET, POST, PUT, DELETE
         r'(?P<request_url>[^"]+)\s'              # Check request uri like /js/react-dom.production.min.js
         r'(?P<http_version>HTTP/\d\.\d)\"\s'     # Check http version like HTTP/1.1
+        r'\"(?P<request_body>.*?)\"\s'           # Check request body
         r'(?P<status>\d+)\s'                     # Check the status respone 304, 200, ...
         r'(?P<body_bytes_sent>\d+)\s'            # Get the number byte send, for purpose like 0, 255
         r'\"(?P<http_referer>[^"]+)\"\s'         # Get the http reference like http://localhost/
@@ -33,6 +34,9 @@ def check_pattern_log_datetime(log_file_path):
             log_arr.append(reg_log_pattern.match(line).groups())
 
     file.close()
+    truncate_file = open(log_file_path, 'w')
+    truncate_file.truncate()
+    truncate_file.close
     
     return log_arr, date_arr
 
@@ -55,14 +59,21 @@ def generate_csv_log(log_file_path, namefile="raw_data.csv"):
     log_arr, date_arr = check_pattern_log_datetime(log_file_path)
     folder_store_csv = create_folder_by_datetime(date_arr)
     for folder_store in folder_store_csv:
-        output = open(folder_store + "/" +namefile, 'w')
-        csv_out = csv.writer(output)
-        csv_out.writerow(['remote_addr', 'remote_usr', 'time_local', 'request_method', 'request_url', 
-                          'http_version', 'status', 'body_bytes_sent', 'http_referer', 'http_user_agent',
-                          'http_x_forwarded_for', 'host', 'server_name', 'request_time'])
+        if not os.path.exists(folder_store + "/" +namefile):
+            output = open(folder_store + "/" +namefile, 'w')
+            csv_out = csv.writer(output)
+            csv_out.writerow(['remote_addr', 'remote_usr', 'time_local', 'request_method', 'request_url',
+                            'http_version', 'request_body', 'status', 'body_bytes_sent', 'http_referer',
+                            'http_user_agent', 'http_x_forwarded_for', 'host', 'server_name', 'request_time'])
+        else:
+            output = open(folder_store + "/" +namefile, 'a')
+            csv_out = csv.writer(output)
 
         for log in log_arr:
             if str(datetime.strptime(log[2], "%d/%b/%Y:%H:%M:%S %z").date()) in folder_store:
+                temp = list(log)
+                temp[6] = str(log[6]).encode('utf-8').decode('unicode_escape')
+                log = tuple(temp)
                 csv_out.writerow(log)
             else:
                 continue

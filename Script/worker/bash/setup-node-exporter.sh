@@ -26,19 +26,19 @@ WantedBy=multi-user.target
 EOF
         sudo systemctl start node_exporter.service
         echo "Node_exporter started successfully"
-        exit 1
+        exit 0
     else
         echo "Unknow version for package node exporter, try again"
         exit 1
     fi
 elif [[ "$1" == "destroy" ]]; then
     # Stop service node exporter | if failed return message
-    sudo systemctl stop node_exporter.service 2> /dev/null || echo "Not exist a node exporter service, check again" && exit 1
+    sudo systemctl stop node_exporter.service 2> /dev/null || (echo "Not exist a node exporter service, check again" | exit 1)
     # Remove the anything refer node_exporeter include serive and binary file
     sudo rm -rf /etc/systemd/system/node_exporter.service
     sudo rm -rf /usr/local/bin/node_exporter
-    echo "Node_exporter stopped and removed successfully"
-    exit 1
+    echo "Node_exporter is stopped and removed successfully"
+    exit 0
 else
     echo "Unknow option do you want, add option and try again"
     exit 1

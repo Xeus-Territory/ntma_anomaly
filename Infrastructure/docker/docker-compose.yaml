@@ -18,5 +18,5 @@ services:
     networks:
       - application
     volumes:
-      - ./log/access.log:/var/log/nginx/access.log
+      - ./log/access.log:/var/log/nginx/access_server.log
       - ./log/error.log:/var/log/nginx/error.log

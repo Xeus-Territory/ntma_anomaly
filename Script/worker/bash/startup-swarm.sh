@@ -13,14 +13,16 @@ if [[ $opt == "create" ]]; then
     if [ "$(docker info --format '{{.Swarm.LocalNodeState}}')" == "active" ]; then
         echo "Swarm is running"
     else
-        echo "Swarm is not running" | docker swarm init 1>/dev/null
-        docker swarm join-token worker | tr -d "\n" | cut -d ":" -f 2-3 > ./temp/output 
+        echo "Swarm is not running"
+        docker swarm init 1> /dev/null
+        docker swarm join-token worker | tr -d "\n" | cut -d ":" -f 2-3 > ./temp/output
+        echo "Swarm is created successfully and check the token at ./temp/output"
     fi
 
     # 2. Setup the network for swarm
     if [ -z "$(docker network ls | grep application)" ]; then
         docker network create --driver=overlay --subnet=172.21.0.0/16 \
-        --gateway=172.21.0.1 --scope=swarm application 1>/dev/null
+        --gateway=172.21.0.1 --scope=swarm application 1> /dev/null
         echo "Network is created successfully"
     else
         echo "Network is really exist"
@@ -31,6 +33,7 @@ if [[ $opt == "create" ]]; then
     docker stack deploy -c docker-compose.yaml todo
     cd "$abs_path_infrastructure" || exit
     docker stack deploy -c docker-compose.yaml todo
+    exit 0
     
 elif [[ $opt == "destroy" ]]; then
     # 1. Remove stack from swarm
@@ -46,6 +49,20 @@ elif [[ $opt == "destroy" ]]; then
         echo "Network is deleted successfully"
     # 3. Leave Swarm
         docker swarm leave --force
+        exit 0
+elif [[ $opt == "clear" ]]; then
+    # Turn down the application on swarm
+    docker stack rm todo 1> /dev/null
+    echo "Application on swarm is turned down successfully"
+    exit 0
+elif [[ $opt == "start" ]]; then
+    # Start the application
+    cd "$abs_path_application" || exit
+    docker stack deploy -c docker-compose.yaml todo
+    cd "$abs_path_infrastructure" || exit
+    docker stack deploy -c docker-compose.yaml todo
+    echo "Application on swarm is started successfully"
+    exit 0
 else
     echo "Not have options, choose for doing"
     exit 1
