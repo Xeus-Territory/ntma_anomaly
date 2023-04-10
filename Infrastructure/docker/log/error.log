@@ -1513,3 +1513,86 @@
 2023/04/07 01:56:53 [notice] 1#1: start worker process 33
 2023/04/07 01:56:53 [notice] 1#1: start worker process 34
 2023/04/07 01:56:53 [notice] 1#1: start worker process 35
+2023/04/07 10:10:45 [notice] 1#1: signal 3 (SIGQUIT) received, shutting down
+2023/04/07 10:10:45 [notice] 28#28: gracefully shutting down
+2023/04/07 10:10:45 [notice] 33#33: gracefully shutting down
+2023/04/07 10:10:45 [notice] 29#29: gracefully shutting down
+2023/04/07 10:10:45 [notice] 34#34: gracefully shutting down
+2023/04/07 10:10:45 [notice] 34#34: exiting
+2023/04/07 10:10:45 [notice] 34#34: exit
+2023/04/07 10:10:45 [notice] 28#28: exiting
+2023/04/07 10:10:45 [notice] 29#29: exiting
+2023/04/07 10:10:45 [notice] 28#28: exit
+2023/04/07 10:10:45 [notice] 29#29: exit
+2023/04/07 10:10:45 [notice] 33#33: exiting
+2023/04/07 10:10:45 [notice] 33#33: exit
+2023/04/07 10:10:45 [notice] 35#35: gracefully shutting down
+2023/04/07 10:10:45 [notice] 35#35: exiting
+2023/04/07 10:10:45 [notice] 35#35: exit
+2023/04/07 10:10:45 [notice] 30#30: gracefully shutting down
+2023/04/07 10:10:45 [notice] 30#30: exiting
+2023/04/07 10:10:45 [notice] 30#30: exit
+2023/04/07 10:10:45 [notice] 31#31: gracefully shutting down
+2023/04/07 10:10:45 [notice] 31#31: exiting
+2023/04/07 10:10:45 [notice] 31#31: exit
+2023/04/07 10:10:45 [notice] 32#32: gracefully shutting down
+2023/04/07 10:10:45 [notice] 32#32: exiting
+2023/04/07 10:10:45 [notice] 32#32: exit
+2023/04/07 10:10:45 [notice] 1#1: signal 17 (SIGCHLD) received from 34
+2023/04/07 10:10:45 [notice] 1#1: worker process 30 exited with code 0
+2023/04/07 10:10:45 [notice] 1#1: worker process 32 exited with code 0
+2023/04/07 10:10:45 [notice] 1#1: worker process 33 exited with code 0
+2023/04/07 10:10:45 [notice] 1#1: worker process 34 exited with code 0
+2023/04/07 10:10:45 [notice] 1#1: signal 29 (SIGIO) received
+2023/04/07 10:10:45 [notice] 1#1: signal 17 (SIGCHLD) received from 30
+2023/04/07 10:10:45 [notice] 1#1: signal 17 (SIGCHLD) received from 28
+2023/04/07 10:10:45 [notice] 1#1: worker process 28 exited with code 0
+2023/04/07 10:10:45 [notice] 1#1: signal 29 (SIGIO) received
+2023/04/07 10:10:45 [notice] 1#1: signal 17 (SIGCHLD) received from 29
+2023/04/07 10:10:45 [notice] 1#1: worker process 29 exited with code 0
+2023/04/07 10:10:45 [notice] 1#1: signal 29 (SIGIO) received
+2023/04/07 10:10:45 [notice] 1#1: signal 17 (SIGCHLD) received from 31
+2023/04/07 10:10:45 [notice] 1#1: worker process 31 exited with code 0
+2023/04/07 10:10:45 [notice] 1#1: worker process 35 exited with code 0
+2023/04/07 10:10:45 [notice] 1#1: exit
+2023/04/10 01:12:33 [notice] 1#1: using the "epoll" event method
+2023/04/10 01:12:33 [notice] 1#1: nginx/1.22.1
+2023/04/10 01:12:33 [notice] 1#1: built by gcc 10.2.1 20210110 (Debian 10.2.1-6) 
+2023/04/10 01:12:33 [notice] 1#1: OS: Linux 5.19.0-38-generic
+2023/04/10 01:12:33 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576
+2023/04/10 01:12:33 [notice] 1#1: start worker processes
+2023/04/10 01:12:33 [notice] 1#1: start worker process 28
+2023/04/10 01:12:33 [notice] 1#1: start worker process 29
+2023/04/10 01:12:33 [notice] 1#1: start worker process 30
+2023/04/10 01:12:33 [notice] 1#1: start worker process 31
+2023/04/10 01:12:33 [notice] 1#1: start worker process 32
+2023/04/10 01:12:33 [notice] 1#1: start worker process 33
+2023/04/10 01:12:33 [notice] 1#1: start worker process 34
+2023/04/10 01:12:33 [notice] 1#1: start worker process 35
+2023/04/10 07:07:19 [warn] 30#30: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:19 [warn] 28#28: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:19 [warn] 33#33: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:19 [warn] 35#35: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:20 [warn] 30#30: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:19 [warn] 31#31: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:19 [warn] 32#32: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:19 [warn] 34#34: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:20 [warn] 35#35: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:21 [warn] 31#31: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:19 [warn] 29#29: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:22 [warn] 28#28: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:35 [warn] 29#29: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:35 [warn] 31#31: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:35 [warn] 30#30: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:35 [warn] 33#33: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:35 [warn] 35#35: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:35 [warn] 28#28: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:35 [warn] 34#34: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:36 [warn] 33#33: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:35 [warn] 32#32: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:37 [warn] 35#35: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:37 [warn] 30#30: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:38 [warn] 32#32: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:38 [warn] 29#29: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:07:37 [warn] 34#34: 1024 worker_connections are not enough, reusing connections
+2023/04/10 07:08:24 [error] 31#31: *520093 readv() failed (104: Connection reset by peer) while reading upstream, client: 10.0.0.2, server: _, request: "GET /items HTTP/1.0", upstream: "http://172.21.0.12:3000/items", host: "localhost"
