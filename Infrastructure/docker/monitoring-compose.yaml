@@ -13,9 +13,6 @@ services:
         limits:
           cpus: '0.50'
           memory: 500M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     container_name: prometheus
     restart: unless-stopped
     healthcheck:
@@ -29,7 +26,7 @@ services:
       - '--storage.tsdb.path=/prometheus'
     volumes:
       - prometheus_data:/prometheus
-      - ./config/prometheus/:/etc/prometheus/
+      - ./conf/monitoring/prometheus/:/etc/prometheus/
     ports:
       - 9090:9090
     # user: '0'
@@ -43,9 +40,6 @@ services:
         limits:
           cpus: '0.50'
           memory: 500M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     container_name: alert-manager
     restart: unless-stopped
     healthcheck:
@@ -60,7 +54,7 @@ services:
       - 9093:9093
     volumes:
       - alertmanager_data:/alertmanager
-      - ./config/alertmanager/:/etc/alertmanager/
+      - ./conf/monitoring/alertmanager/:/etc/alertmanager/
     depends_on:
       - prometheus
     labels:
@@ -73,9 +67,6 @@ services:
         limits:
           cpus: '0.50'
           memory: 500M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     container_name: grafana
     restart: unless-stopped
     healthcheck:
@@ -93,66 +84,66 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./config/grafana/provisioning:/etc/grafana/provisioning
+      - ./conf/monitoring/grafana/provisioning:/etc/grafana/provisioning
     labels:
       org.label-schema.group: "monitoring"
 
-  node_exporter:
-    image: prom/node-exporter:v1.5.0
-    deploy:
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 500M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
-    container_name: node-exporter
-    restart: unless-stopped
-    healthcheck:
-      test: wget --quiet --tries=1 --spider http://localhost:9100
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.rootfs=/rootfs'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    ports:
-      - 9100:9100
-    labels:
-      org.label-schema.group: "monitoring"
+  # node_exporter:
+  #   image: prom/node-exporter:v1.5.0
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.50'
+  #         memory: 500M
+  #       reservations:
+  #         cpus: '0.25'
+  #         memory: 100M
+  #   container_name: node-exporter
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: wget --quiet --tries=1 --spider http://localhost:9100
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #   volumes:
+  #     - /proc:/host/proc:ro
+  #     - /sys:/host/sys:ro
+  #     - /:/rootfs:ro
+  #   command:
+  #     - '--path.procfs=/host/proc'
+  #     - '--path.rootfs=/rootfs'
+  #     - '--path.sysfs=/host/sys'
+  #     - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+  #   ports:
+  #     - 9100:9100
+  #   labels:
+  #     org.label-schema.group: "monitoring"
     
-  cadvisor:
-    image: gcr.io/google-containers/cadvisor:v0.36.0
-    deploy:
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 500M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
-    container_name: cadvisor
-    restart: unless-stopped
-    healthcheck:
-      test: wget --quiet --tries=1 --spider http://localhost:8080/containers/
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    ports:
-    - 8080:8080
-    labels:
-      org.label-schema.group: "monitoring"
+  # cadvisor:
+  #   image: gcr.io/google-containers/cadvisor:v0.36.0
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '0.50'
+  #         memory: 500M
+  #       reservations:
+  #         cpus: '0.25'
+  #         memory: 100M
+  #   container_name: cadvisor
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: wget --quiet --tries=1 --spider http://localhost:8080/containers/
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run:ro
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker/:/var/lib/docker:ro
+  #     - /dev/disk/:/dev/disk:ro
+  #   ports:
+  #   - 8080:8080
+  #   labels:
+  #     org.label-schema.group: "monitoring"
     

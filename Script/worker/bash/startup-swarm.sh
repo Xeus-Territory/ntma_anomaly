@@ -50,12 +50,12 @@ elif [[ $opt == "destroy" ]]; then
     # 3. Leave Swarm
         docker swarm leave --force
         exit 0
-elif [[ $opt == "clear" ]]; then
+elif [[ $opt == "down" ]]; then
     # Turn down the application on swarm
     docker stack rm todo 1> /dev/null
     echo "Application on swarm is turned down successfully"
     exit 0
-elif [[ $opt == "start" ]]; then
+elif [[ $opt == "up" ]]; then
     # Start the application
     cd "$abs_path_application" || exit
     docker stack deploy -c docker-compose.yaml todo
