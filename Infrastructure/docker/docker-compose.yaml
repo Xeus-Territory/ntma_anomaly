@@ -19,4 +19,4 @@ services:
       - application
     volumes:
       - ./log/access.log:/var/log/nginx/access_server.log
-      - ./log/error.log:/var/log/nginx/error.log
+      - ./log/error.log:/var/log/nginx/error_server.log

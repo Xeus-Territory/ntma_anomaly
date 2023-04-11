@@ -116,7 +116,6 @@ def interact_todo(method = ['GET'] ,location_uri = "localhost", port = "80",  pr
                         continue
                     else:
                         print("Not have anything, force stop to do anything")
-                        set_timeout = 0
                         break
                         
                 if len(response.json()) >= 1:
@@ -177,7 +176,6 @@ def interact_todo(method = ['GET'] ,location_uri = "localhost", port = "80",  pr
                         continue
                     else:
                         print("Not have anything, force stop to do anything")
-                        set_timeout = 0
                         break
                 if len(response.json()) >= 1:
                     object_random = random.choice(response.json())
@@ -200,8 +198,9 @@ def interact_todo(method = ['GET'] ,location_uri = "localhost", port = "80",  pr
         time.sleep(sleep_timeout)
         end_time = time.time()
         set_timeout -= end_time - start_time
-        print(set_timeout)  
-    return results_interact
+        print(set_timeout)
+    set_timeout  = 0 if set_timeout <= 0 else round(set_timeout)
+    return results_interact, set_timeout
             
 def benchmark_todo(location_uri = "localhost", port = "80",  protocol = "http", 
                    dir_point = "/items", set_timeout=5, worker=10, number_requests=1000):
@@ -237,8 +236,8 @@ def __main__():
     parser.add_argument('-s', '--sleep', help='seconds to sleep for each request [Valid with interact Mode]', type=int, default=5)
     parser.add_argument('-D', '--data_templates', help='Data templates for post requests [Valid with interact Mode]' + 
                                 'Type: Dictionary. Example: {"name":"HelloWorld!!!"} ', type=dict, default={"name":"HelloWorld!!!"})
-    parser.add_argument('-w', '--workers', help='Number of workers or concurence level for doing a job', default=10)
-    parser.add_argument('--number_requests', help='Number of requests for benchmarking', default=1000)
+    parser.add_argument('-w', '--workers', help='Number of workers or concurence level for doing a job', type=int, default=10)
+    parser.add_argument('-n', '--number_requests', help='Number of requests for benchmarking', type=int, default=1000)
     opt = parser.parse_args()
 
     timeout = opt.timeout
@@ -250,9 +249,9 @@ def __main__():
         method = [str(m) for m in opt.method]
         template = opt.data_templates
         sleep_timeout = opt.sleep
-        results_interact = interact_todo(method=method, location_uri=location_uri, port=port, protocol=protocol, dir_point=directory,
+        results_interact, cost_time = interact_todo(method=method, location_uri=location_uri, port=port, protocol=protocol, dir_point=directory,
                                          data_template=template, set_timeout=float(timeout), sleep_timeout=sleep_timeout)
-        print('Processing results: Succeed after ' + str(datetime.timedelta(seconds=timeout)) + "\n" + 
+        print('Processing results: Succeed after ' + str(datetime.timedelta(seconds=(timeout-cost_time))) + "\n" + 
               "Results:" + "\n" +
               "\t- Total Requests: " + str(results_interact["Total Request"]) + "\n" +
               "\t- Total 2xx Response: " + str(results_interact["2xx Response"]) + "\n" +

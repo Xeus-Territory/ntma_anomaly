@@ -2,6 +2,7 @@ import csv
 import re
 import os
 from datetime import datetime
+from sys import argv
 
 def check_pattern_log_datetime(log_file_path):
     date_arr = []
@@ -77,3 +78,19 @@ def generate_csv_log(log_file_path, namefile="raw_data.csv"):
             else:
                 continue
         output.close()
+    
+def __main__():
+    try:
+        if argv[1] != "":
+            try:
+                generate_csv_log(argv[1])
+            except FileNotFoundError:
+                print("Something wrong on your file, It doesn't exist or wrong path. Try Again !!!")
+                return
+    except IndexError:
+        print("Missing a path for the log file, pass in and try again !!!")
+        return
+        
+if __name__ == '__main__':
+    __main__()
+        
