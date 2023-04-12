@@ -5,6 +5,14 @@ from datetime import datetime
 from sys import argv
 
 def check_pattern_log_datetime(log_file_path):
+    """ Checks the pattern of log a return timestamp and valid log
+
+    Args:
+        log_file_path (string): path to the log file
+
+    Returns:
+        (list, list): Return twice list of strings, first for log and second for timestamp
+    """    
     date_arr = []
     log_arr = []
     file = open(log_file_path, 'r')
@@ -42,6 +50,14 @@ def check_pattern_log_datetime(log_file_path):
 
 
 def create_folder_by_datetime(date_arr):
+    """Create a folder by datetime
+
+    Args:
+        date_arr (list): list of datetime
+
+    Returns:
+        list: list of strings representing for folder storage log
+    """    
     path_folder_create = []
     for date in date_arr:
         path = "../../../Infrastructure/docker/log/" + date
@@ -56,6 +72,12 @@ def create_folder_by_datetime(date_arr):
             
 
 def generate_csv_log(log_file_path, namefile="raw_data.csv"):
+    """Generate a new csv file for each log file when function access
+
+    Args:
+        log_file_path (string): path of log file
+        namefile (str, optional): name of file csv will generate. Defaults to "raw_data.csv".
+    """    
     log_arr, date_arr = check_pattern_log_datetime(log_file_path)
     folder_store_csv = create_folder_by_datetime(date_arr)
     for folder_store in folder_store_csv:

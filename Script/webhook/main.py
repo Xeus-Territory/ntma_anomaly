@@ -27,7 +27,7 @@ def alerts():
 def send_test_message(data):
     try:
         # print(data)
-        message = "=========🔥 Alert 🔥======== " \
+        message = "=========🔥 Alert 🔥========= " \
         + "\nStatus: "          + data["status"] \
         + "\n\nLabels:" \
         + "\n  → Alertname: "   + data["labels"]["alertname"] \

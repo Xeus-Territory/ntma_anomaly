@@ -32,6 +32,11 @@ services:
         limits:
           cpus: '0.1'
           memory: 200M
+    healthcheck:
+      test: "wget --quiet --tries=1 --spider http://localhost:3000"
+      interval: 30s
+      timeout: 10s
+      retries: 5
     environment:
       MYSQL_HOST: todo_mysql
       MYSQL_USER: root
