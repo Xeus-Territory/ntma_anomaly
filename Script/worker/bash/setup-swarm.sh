@@ -14,7 +14,7 @@ if [[ $opt == "create" ]]; then
         echo "Swarm is running"
     else
         echo "Swarm is not running"
-        docker swarm init 1> /dev/null
+        docker swarm init --advertise-addr "$2" 1> /dev/null || echo "Choose the valid network for swarm, detect more NIC instances"
         docker swarm join-token worker | tr -d "\n" | cut -d ":" -f 2-3 > ./temp/output
         echo "Swarm is created successfully and check the token at ./temp/output"
     fi
