@@ -92,11 +92,11 @@ elif [[ "$1" == "destroy" ]];then
    docker-compose -f "$abs_path_infrastructure/monitoring-compose.yaml" down || echo "Something went wrong, the compose file isn't exist" | exit 1
    echo "Destroy monitoring compose is completed successfully"
    exit 0
-elif [[ "$1" == "stop" ]];then
+elif [[ "$1" == "down" ]];then
    docker-compose -f "$abs_path_infrastructure/monitoring-compose.yaml" stop || echo "Something went wrong, the compose file isn't exist" | exit 1
    echo "Stop monitoring compose is completed successfully"
    exit 0
-elif [[ "$1" == "start" ]];then
+elif [[ "$1" == "up" ]];then
    docker-compose -f "$abs_path_infrastructure/monitoring-compose.yaml" start || echo "Something went wrong, the compose file isn't exist" | exit 1
    echo "Start monitoring compose is completed successfully"
    exit 0

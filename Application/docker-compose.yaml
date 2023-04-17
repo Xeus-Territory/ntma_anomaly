@@ -6,7 +6,6 @@ networks:
 
 services:
   mysql:
-    # container_name: todo-mysql
     image: mysql:8.0
     volumes:
       - todo-mysql-data:/var/lib/mysql
@@ -21,12 +20,8 @@ services:
     networks:
       - application
   app:
-    # container_name: todo-app
     image: application:v0.0.1
     command: sh -c "yarn run dev"
-    # working_dir: /app
-    # volumes:
-    #   - ./app:/app
     deploy:
       resources:
         limits:

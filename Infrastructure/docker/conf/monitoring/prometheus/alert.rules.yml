@@ -35,7 +35,7 @@ groups:
       # See https://medium.com/faun/how-much-is-too-much-the-linux-oomkiller-and-used-memory-d32186f29c9d
       - alert: ContainerMemoryUsage
         expr: (sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80
-        for: 2m
+        for: 30s
         annotations:
           summary: Container Memory usage (instance {{ $labels.instance }})
           description: "\n      → Container Memory usage is above 80%\n      → Value = {{ $value }}\n      → Labels = {{ $labels }}"
