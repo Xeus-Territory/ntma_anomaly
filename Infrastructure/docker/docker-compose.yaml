@@ -15,6 +15,14 @@ services:
         limits:
           cpus: "0.1"
           memory: 500M
+      placement:
+        constraints:
+          - "node.role==manager"
+    healthcheck:
+      test: "curl http://todo_app:3000"
+      interval: 30s
+      timeout: 10s
+      retries: 5
     networks:
       - application
     volumes:

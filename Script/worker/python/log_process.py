@@ -12,27 +12,31 @@ def check_pattern_log_datetime(log_file_path):
 
     Returns:
         (list, list): Return twice list of strings, first for log and second for timestamp
-    """    
+    """
     date_arr = []
     log_arr = []
     file = open(log_file_path, 'r')
     reg_log_pattern = re.compile(
-        r'(?P<remote_addr>\d+\.\d+\.\d+\.\d+)\s' # Check remote_addr like 10.0.0.2
-        r'(?P<remote_usr>\S+)\s'                 # Check remote_usr like - -, Get the string inside and if it empty return ""
-        r'\S+\s'                                 # Remove the space before the time_local
-        r'\[(?P<time_local>.*?)\]\s'             # Check time_local like [04/Apr/2023:07:11:48 +0000], return string inside the brackets
-        r'\"(?P<request_method>[A-Z]+)\s'        # Check request method like GET, POST, PUT, DELETE
-        r'(?P<request_url>[^"]+)\s'              # Check request uri like /js/react-dom.production.min.js
-        r'(?P<http_version>HTTP/\d\.\d)\"\s'     # Check http version like HTTP/1.1
-        r'\"(?P<request_body>.*?)\"\s'           # Check request body
-        r'(?P<status>\d+)\s'                     # Check the status respone 304, 200, ...
-        r'(?P<body_bytes_sent>\d+)\s'            # Get the number byte send, for purpose like 0, 255
-        r'\"(?P<http_referer>[^"]+)\"\s'         # Get the http reference like http://localhost/
-        r'\"(?P<http_user_agent>[^"]+)\"\s'      # Get the http user agent like Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/111.0
-        r'\"(?P<http_x_forwarded_for>[^"]+)\"\s' # Get the http x_forwarded_for like ip, ...
-        r'\"(?P<host>[^"]+)\"\s'                 # Get the host for the server like localhost
-        r'\"(?P<server_name>[^"]+)\"\s'          # Get and check server name like _ if null, or something else
-        r'\"(?P<request_time>[^"]+)\"'           # Get request time 
+        r'(?P<remote_addr>\d+\.\d+\.\d+\.\d+)\s'        # Check remote_addr like 10.0.0.2
+        r'(?P<remote_usr>\S+)\s'                        # Check remote_usr like - -, Get the string inside and if it empty return ""
+        r'\S+\s'                                        # Remove the space before the time_local
+        r'\[(?P<time_local>.*?)\]\s'                    # Check time_local like [04/Apr/2023:07:11:48 +0000], return string inside the brackets
+        r'\"(?P<request_method>[A-Z]+)\s'               # Check request method like GET, POST, PUT, DELETE
+        r'(?P<request_url>[^"]+)\s'                     # Check request uri like /js/react-dom.production.min.js
+        r'(?P<http_version>HTTP\/\d\.\d)\"\s'            # Check http version like HTTP/1.1
+        r'\"(?P<request_body>.*?)\"\s'                  # Check request body
+        r'(?P<status>\d+)\s'                            # Check the status respone 304, 200, ...
+        r'(?P<body_bytes_sent>\d+)\s'                   # Get the number byte send, for purpose like 0, 255
+        r'\"(?P<http_referer>[^"]+)\"\s'                # Get the http reference like http://localhost/
+        r'\"(?P<upstream_addr>[^"]+)\"\s'               # Get the upstream address 
+        r'(?P<upstream_status>\d+)\s'                   # Get the upstream status
+        r'\"(?P<http_user_agent>[^"]+)\"\s'             # Get the http user agent like Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/111.0
+        r'\"(?P<http_x_forwarded_for>[^"]+)\"\s'        # Get the http x_forwarded_for like ip, ...
+        r'\"(?P<host>[^"]+)\"\s'                        # Get the host for the server like localhost
+        r'\"(?P<server_name>[^"]+)\"\s'                 # Get and check server name like _ if null, or something else
+        r'\"(?P<request_time>[^"]+)\"\s'                # Get request time 
+        r'\"(?P<upstream_response_time>[^"]+)\"\s'      # Get response upstream time
+        r'\"(?P<upstream_connection_time>[^"]+)\"\s'    # Get upstream connection time
     )
     for line in file.readlines():
         if reg_log_pattern.match(line) is not None:
@@ -85,8 +89,9 @@ def generate_csv_log(log_file_path, namefile="raw_data.csv"):
             output = open(folder_store + "/" +namefile, 'w')
             csv_out = csv.writer(output)
             csv_out.writerow(['remote_addr', 'remote_usr', 'time_local', 'request_method', 'request_url',
-                            'http_version', 'request_body', 'status', 'body_bytes_sent', 'http_referer',
-                            'http_user_agent', 'http_x_forwarded_for', 'host', 'server_name', 'request_time'])
+                            'http_version', 'request_body', 'status', 'body_bytes_sent', 'http_referer', 'upstream_addr',
+                            'upstream_status', 'http_user_agent', 'http_x_forwarded_for', 'host', 'server_name', 'request_time',
+                            'upstream_response_time', 'upstream_connection_time'])
         else:
             output = open(folder_store + "/" +namefile, 'a')
             csv_out = csv.writer(output)
@@ -115,4 +120,3 @@ def __main__():
         
 if __name__ == '__main__':
     __main__()
-        

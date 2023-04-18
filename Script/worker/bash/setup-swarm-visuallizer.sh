@@ -8,9 +8,11 @@ clone_visuallizer() {
 git clone https://github.com/dockersamples/docker-swarm-visualizer.git
 
 # Config port to exposed
-cat << EOF | tee "$abs_path_folder/docker-swarm-visualizer/docker-compose.yaml" > /dev/null
+cat << EOF | tee "$abs_path_folder/docker-swarm-visualizer/docker-compose.yml" > /dev/null
 version: "3"
 
+networks:
+  visualization:
 services:
   viz:
     container_name: "docker-swarm-visualizer"
@@ -20,16 +22,18 @@ services:
     - "/var/run/docker.sock:/var/run/docker.sock"
     ports:
     - "8081:8080"
+    networks:
+     - visualization
 EOF
 }
 
 if [[ "$1" == "create" ]]; then
     clone_visuallizer
-    docker-compose -f docker-swarm-visualizer/docker-compose.yaml up -d
+    docker-compose -f docker-swarm-visualizer/docker-compose.yml up -d || echo "Error: Cannot create docker-swarm-visualizer"
     echo "Created docker-swarm-visullizer is successfully"
     if [ "$2" == "-n" ]; then
         rm -rf docker-swarm-visualizer
-        "Remove docker-swarm-visullizer folder is successfully"
+        echo "Remove docker-swarm-visullizer folder is successfully"
         exit 0
     elif [[ "$2" == "" ]]; then
         read -p "Do you want to keep the folder docker-swarm-visualizer[y/n]? " choice
@@ -44,7 +48,7 @@ if [[ "$1" == "create" ]]; then
     fi
 elif [[ "$1" == "destroy" ]]; then
     if [[ -d "$abs_path_folder/docker-swarm-visualizer" ]]; then
-        docker-compose -f "$abs_path_folder/docker-swarm-visualizer/docker-compose.yaml" down
+        docker-compose -f "$abs_path_folder/docker-swarm-visualizer/docker-compose.yml" down
         rm -rf "$abs_path_folder/docker-swarm-visualizer"
         read -p "Do you want to keep the docker-swarm-visualizer image [y/n]? " choice
         if [[ $choice == "n" ]]; then

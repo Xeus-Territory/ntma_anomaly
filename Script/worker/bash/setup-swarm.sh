@@ -14,7 +14,7 @@ if [[ $opt == "create" ]]; then
         echo "Swarm is running"
     else
         echo "Swarm is not running"
-        docker swarm init --advertise-addr "$2" 1> /dev/null
+        docker swarm init --advertise-addr "$2" 1> /dev/null || exit 1
         docker swarm join-token worker | tr -d "\n" | cut -d ":" -f 2-3 > ./temp/output
         echo "Swarm is created successfully and check the token at ./temp/output"
     fi
@@ -22,7 +22,7 @@ if [[ $opt == "create" ]]; then
     # 2. Setup the network for swarm
     if [ -z "$(docker network ls | grep application)" ]; then
         docker network create --driver=overlay --subnet=172.21.0.0/16 \
-        --gateway=172.21.0.1 --scope=swarm application 1> /dev/null
+        --gateway=172.21.0.1 --scope=swarm --attachable application 1> /dev/null
         echo "Network is created successfully"
     else
         echo "Network is really exist"
