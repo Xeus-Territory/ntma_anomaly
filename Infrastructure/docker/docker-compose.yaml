@@ -14,7 +14,7 @@ services:
       resources:
         limits:
           cpus: "0.1"
-          memory: 500M
+          memory: 200M
       placement:
         constraints:
           - "node.role==manager"
@@ -28,3 +28,23 @@ services:
     volumes:
       - ./log/access.log:/var/log/nginx/access_server.log
       - ./log/error.log:/var/log/nginx/error_server.log
+
+  nginx_exporter:
+    image: nginx/nginx-prometheus-exporter:0.10.0
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 200M
+      placement:
+        constraints:
+          - "node.role==manager"
+    command:
+      - '-nginx.scrape-uri=http://todo_server/nginx_status'
+    ports:
+      - 9113:9113
+    labels:
+      org.label-schema.group: "monitoring"
+    networks:
+      - application    

@@ -64,7 +64,7 @@ def create_folder_by_datetime(date_arr):
     """    
     path_folder_create = []
     for date in date_arr:
-        path = "../../../Infrastructure/docker/log/" + date
+        path = "../../../Infrastructure/docker/log/backup/" + date
         if not os.path.exists(path):
             os.makedirs(path)
             path_folder_create.append(path)

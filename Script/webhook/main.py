@@ -47,14 +47,18 @@ def scaling_job(name_service, action):
     """    
     print("Scaling " + action + "...")
     os.system('./scale-service-swarm.sh ' + name_service + ' ' + action)
-
+    
 @app.route('/alerts', methods=['POST'])
 def alerts():
+    """Receive alerts from prometheus and trigger scale and notify for telegram
+
+    Returns:
+        string: "OK" for comfirm everything is work
+    """    
     data = request.json
     data = data["alerts"][0]
     
     # Your analysis and processing here!
-    print(request.json['alerts'][0]['labels']['name'])
     scaling_job(request.json['alerts'][0]['labels']['name'], "up")
 
     # Send alert to telegram

@@ -4,7 +4,7 @@ groups:
       # Host out of memory => Node memory is filling up (< 10% left)
       - alert: HostOutOfMemory
         expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10
-        for: 2m
+        for: 30s
         annotations:
           summary: Host out of memory (instance {{ $labels.instance }})
           description: "\n      → Node memory is filling up (< 10% left)\n      → Value = {{ $value }}\n      → Labels = {{ $labels }}"
@@ -13,8 +13,8 @@ groups:
 
       # Host high CPU load => CPU load is > 80%
       - alert: HostHighCpuLoad
-        expr: sum by (instance) (avg by (mode, instance) (rate(node_cpu_seconds_total{mode!="idle"}[2m]))) > 0.8
-        for: 0m
+        expr: sum by (instance) (avg by (mode, instance) (rate(node_cpu_seconds_total{mode!="idle"}[30s]))) > 0.8
+        for: 30s
         annotations:
           summary: Host high CPU load (instance {{ $labels.instance }})
           description: "\n      → CPU load is > 80%\n      → Value = {{ $value }}\n      → Labels = {{ $labels }}"
@@ -23,8 +23,8 @@ groups:
 
       # Container CPU usage => Container CPU usage is above 80%
       - alert: ContainerCpuUsage
-        expr: (sum(rate(container_cpu_usage_seconds_total{name!=""}[2m])) BY (instance, name) * 100) > 80
-        for: 2m
+        expr: (sum(rate(container_cpu_usage_seconds_total{name!=""}[30s])) BY (instance, name) * 100) > 8
+        for: 30s
         annotations:
           summary: Container CPU usage (instance {{ $labels.instance }})
           description: "\n      → Container CPU usage is above 80%\n      → Value = {{ $value }}\n      → Labels = {{ $labels }}"

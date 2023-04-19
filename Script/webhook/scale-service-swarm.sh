@@ -11,10 +11,13 @@ replica_exist=$(docker service ls | grep "$service_name" | awk '{print $4}' | cu
 ## Scale up or scale down the service
 if [[ $2 == "up" ]]; then
     docker service scale "$service_name"=$(("$replica_exist" + 1))
+    exit 0
 else
     if [[ $(("$replica_exist")) -gt 1 ]]; then
         docker service scale "$service_name"=$(("$replica_exist" - 1))
+        exit 0
     else
+        echo "$service_name is already the lastest, can not scale down the service"
         exit 1
     fi
 fi
