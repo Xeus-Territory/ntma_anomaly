@@ -14,7 +14,7 @@ route:
 receivers:
   - name: webhook_python
     webhook_configs:
-    - url: "http://192.168.82.31:5000/alerts"
+    - url: "http://192.168.66.128:5000/alerts"
       send_resolved: true
       
 inhibit_rules:

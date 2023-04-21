@@ -234,7 +234,7 @@ def __main__():
     parser.add_argument('-l', '--location_uri', help='URI for request', required=True)
     parser.add_argument('-p', '--port', help='port of URI to request', default="80")
     parser.add_argument('-m', '--method', help='method of request', nargs='+', required=TYPE[0] in argv)
-    parser.add_argument('-d', '--directory', help='directory of request [More with interact but specify with benchmark]', nargs='+', default='/')
+    parser.add_argument('-d', '--directory', help='directory of request [More with interact but specify with benchmark]', nargs='+', required=True)
     parser.add_argument('-t', '--timeout', help='timoout give for bot in (seconds) [Valid with both mode]', type=int, default=30)
     parser.add_argument('-s', '--sleep', help='seconds to sleep for each request [Valid with interact Mode]', type=int, default=5)
     parser.add_argument('-D', '--data_templates', help='Data templates for post requests [Valid with interact Mode]' + 
