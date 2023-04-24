@@ -33,21 +33,18 @@ def send_test_message(data):
     """    
     try:
         message = "=========🔥 Alert 🔥========= " \
-        + "\nStatus: "          + data["status"] \
         + "\n\nLabels:" \
-        + "\n  → Alertname: "   + data["labels"]["alertname"] \
-        + "\n  → Instance: "    + data["labels"]["instance"] \
-        + "\n  → Severity: "    + data["labels"]["severity"] \
+        + "\n  → Alertname: "   + str(data["labels"]["alertname"]) \
+        + "\n  → Instance: "    + str(data["labels"]["instance"]) \
+        + "\n  → Severity: "    + str(data["labels"]["severity"]) \
         + "\n\nAnnotations:" \
-        + "\n  → Description: " + data["annotations"]["description"] \
-        + "\n  → Summary: "     + data["annotations"]["summary"] \
-        + "\n\nStarts at: "     + data["startsAt"] \
-        + "\nEnds at: "         + data["endsAt"] \
-        + "\n================= \n"
+        + "\n  → Description: " + str(data["annotations"]["description"]) \
+        + "\n  → Summary: "     + str(data["annotations"]["summary"]) \
+        + "\n\nStarts at: "     + str(data["activeAt"]) \
         
-        bot.send_message(chat_id=CHAT_ID, text="Scaling alert !!!")
+        bot.send_message(chat_id=CHAT_ID, text=message)
     except Exception as ex:
-        print("Error occured")
+        print("Error occured with err: ", ex)
         
 def enum_replica():
     """
@@ -117,7 +114,7 @@ def scaling_replica(name_container, time_untouchable, max_scaling_service=1):
                     continue
 
     
-def scaling_node(name_node, max_scaling_node=1):
+def scaling_node(max_scaling_node=1):
     pass
 
 
@@ -155,10 +152,14 @@ def __main__():
             print(len(alerts))
             if (len(alerts) > 0):
                 for index in range(0, len(alerts)):
-                    if (alerts[index]['labels']['name'] not in replica_name) and (alerts[index]['state'] in state_alert):
-                        replica_name.append(alerts[index]['labels']['name'])
-                        threading.Thread(target=scaling_replica, args=(alerts[index]['labels']['name'], time_interval, max_replica)).start()
-                    send_test_message(alerts[index])
+                    try:
+                        if (alerts[index]['labels']['name'] not in replica_name) and (alerts[index]['state'] in state_alert):
+                            replica_name.append(alerts[index]['labels']['name'])
+                            threading.Thread(target=scaling_replica, args=(alerts[index]['labels']['name'], time_interval, max_replica)).start()
+                            send_test_message(alerts[index])
+                    except:
+                        scaling_node()
+                        send_test_message(alerts[index])
             else:
                 continue
         except:

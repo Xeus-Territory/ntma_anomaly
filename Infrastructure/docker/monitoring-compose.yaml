@@ -15,7 +15,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.20'
+          cpus: '0.50'
           memory: 500M
     container_name: prometheus
     restart: unless-stopped
@@ -72,7 +72,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.20'
+          cpus: '0.50'
           memory: 500M
     container_name: grafana
     restart: unless-stopped
