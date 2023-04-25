@@ -15,7 +15,7 @@ networks:
   monitoring:
     external: true
 services:
-  viz:
+  visuallizer:
     container_name: "docker-swarm-visualizer"
     build: .
     image: docker-swarm-visualizer:latest
@@ -33,6 +33,7 @@ services:
 EOF
 }
 
+# Create the image and build the container for swarm visualization
 if [[ "$1" == "create" ]]; then
     clone_visuallizer
     { 
@@ -56,6 +57,7 @@ if [[ "$1" == "create" ]]; then
             exit 0
         fi
     fi
+# Destroy the visualizer swarm-visullizer and attach file if it exists
 elif [[ "$1" == "destroy" ]]; then
     if [[ -d "$abs_path_folder/docker-swarm-visualizer" ]]; then
         docker-compose -f "$abs_path_folder/docker-swarm-visualizer/docker-compose.yml" down
@@ -88,6 +90,7 @@ elif [[ "$1" == "destroy" ]]; then
         fi
         echo "Successfully removed docker-swarm-visualizer"
     fi
+# Error when not input the action
 elif [[ "$1" == "" ]]; then
     echo "Error: No option specified for docker-swarm-visualizer, please specify and try again !!!"
     exit 1

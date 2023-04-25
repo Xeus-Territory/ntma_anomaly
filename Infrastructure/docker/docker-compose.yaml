@@ -6,7 +6,6 @@ networks:
 
 services:
   server:
-    # container_name: nginx-server
     image: nginx-rebuild:v0.0.1
     ports:
       - 80:80
