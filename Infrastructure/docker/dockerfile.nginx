@@ -1,4 +1,60 @@
-FROM nginx:stable
+# Provides the env for building the addon for nginx
+FROM debian:bullseye-slim AS builder
+
+# Configuration NGINX-Version to Environment
+ENV NGINX_VERSION=1.23.4
+
+# Update requirements package for os
+RUN apt update && \
+    apt install -y \
+    build-essential curl git \
+    libpcre++-dev zlib1g-dev \
+    libtool autoconf \
+    libssl-dev libxml2-dev \
+    libgeoip-dev liblmdb-dev \
+    libyajl-dev libcurl4-openssl-dev \
+    libpcre3-dev pkgconf libxslt1-dev \
+    libgd-dev automake
+
+
+# Download and uncompress nginx packages
+RUN curl http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz -o /tmp/nginx-${NGINX_VERSION}.tar.gz && \
+    tar -xvzf /tmp/nginx-${NGINX_VERSION}.tar.gz --directory /tmp/
+
+# Download and configure modesecurity package
+RUN git clone --depth 100 -b v3/master --single-branch https://github.com/SpiderLabs/ModSecurity /tmp/ModSecurity && \
+    cd /tmp/ModSecurity && \
+    git submodule init && \
+    git submodule update  && \
+    sh build.sh && \
+    ./configure && \
+    make && \ 
+    make install && \
+    cd /
+
+# Download and run configuration build module for nginx with modsecurity
+RUN git clone https://github.com/SpiderLabs/ModSecurity-nginx /tmp/ModSecurity-nginx && \
+    cd /tmp/nginx-${NGINX_VERSION} && \
+    ./configure --with-compat --with-openssl=/usr/include/openssl/ --add-dynamic-module=/tmp/ModSecurity-nginx && \
+    make modules && \
+    rm -rf Makefile /objs/Makefile
+
+# # Download and configurartion build module for nginx with ngx_dynamic_upstream
+# RUN git clone https://github.com/cubicdaiya/ngx_dynamic_upstream.git /tmp/ngx_dynamic_upstream && \
+#     cd /tmp/nginx-${NGINX_VERSION} && \
+#     ./configure --add-dynamic-module=/tmp/ngx_dynamic_upstream && \
+#     make modules
+
+FROM nginx:1.23.4
+
+ENV NGINX_VERSION=1.23.4
+
+# # Copy the module mod-security compile for
+COPY --from=builder /tmp/nginx-${NGINX_VERSION}/objs/ngx_http_modsecurity_module.so /etc/nginx/modules
+
+# # The Module is not valid for nginx-version - outdate and deprecation - 
+# # should using 1.11.0 version like Makefile https://github.com/cubicdaiya/ngx_dynamic_upstream
+# COPY --from=builder /tmp/nginx-${NGINX_VERSION}/objs/ngx_dynamic_upstream_module.so /etc/nginx/modules
 
 COPY conf/nginx/nginx.conf /etc/nginx/nginx.conf
 
