@@ -8,9 +8,49 @@ abs_path_infrastructure="$abs_path_folder_root/Infrastructure/docker"
 # Function to generate configuration
 generate_conf() {
   addr=$1
-  if [[ $addr != "" ]]; then
+  node=$2
+  api=$3
+  
+  if [[ $addr != "" && $node != "" && $api != "" ]]; then
+    # Generate the configuration for default prometheus
+    cat << EOF | tee "$abs_path_infrastructure/conf/monitoring/prometheus/target/cadvisor.json" > /dev/null || echo "ERROR: The file does not exist"
+[
+  {
+    "labels": {
+      "job": "cadvisor"
+    },
+    "targets": [
+      "$addr:8080"
+    ]
+  }
+]
+EOF
+    cat << EOF | tee "$abs_path_infrastructure/conf/monitoring/prometheus/target/node-exporter.json" > /dev/null || echo "ERROR: The file does not exist"
+[
+  {
+    "labels": {
+      "job": "cadvisor"
+    },
+    "targets": [
+      "$addr:9100"
+    ]
+  }
+]
+EOF
+    cat << EOF | tee "$abs_path_infrastructure/conf/monitoring/prometheus/target/nginx-exporter.json" > /dev/null || echo "ERROR: The file does not exist"
+[
+  {
+    "labels": {
+      "job": "cadvisor"
+    },
+    "targets": [
+      "$node:9113"
+    ]
+  }
+]
+EOF
     # Generate the configuration for alert manager
-    cat <<EOF | tee "$abs_path_infrastructure/conf/monitoring/alertmanager/alertmanager.yml" >/dev/null || echo "The file does not exist"
+    cat <<EOF | tee "$abs_path_infrastructure/conf/monitoring/alertmanager/alertmanager.yml" > /dev/null || echo "ERROR: The file does not exist"
 global:
   resolve_timeout: 1m
 
@@ -27,7 +67,7 @@ route:
 receivers:
   - name: webhook_python
     webhook_configs:
-    - url: "$addr"
+    - url: "$api:5000"
       send_resolved: true
       
 inhibit_rules:
@@ -45,17 +85,17 @@ EOF
 
 # Generate the configuration file
 if [[ "$1" == "gen" ]]; then
-  generate_conf "$2"
+  generate_conf "$2" "$3" "$4"
   exit 0
+
 # Generate the configuration file and create monitoring group
 elif [[ "$1" == "gen-create" ]]; then
-  generate_conf "$2"
+  generate_conf "$2" "$3" "$4"
   {
     docker network create --driver bridge --subnet=172.30.0.0/16 --gateway=172.30.0.1 --scope=local monitoring
   } || {
     echo "Error when generating network" && exit 1
   }
-  bash -c "./setup-swarm-visuallizer.sh create -n"
   {
     docker-compose -f "$abs_path_infrastructure/monitoring-compose.yaml" up -d
   } || {
@@ -63,6 +103,7 @@ elif [[ "$1" == "gen-create" ]]; then
   }
   echo "Create monitoring compose is completed successfully"
   exit 0
+
 # Not need to generate a new config, just create monitoring group
 elif [[ "$1" == "create" ]]; then
   {
@@ -70,7 +111,6 @@ elif [[ "$1" == "create" ]]; then
   } || {
     echo "Error when generating network" && exit 1
   }
-  bash -c "./setup-swarm-visuallizer.sh create -n"
   {
     docker-compose -f "$abs_path_infrastructure/monitoring-compose.yaml" up -d
   } || {
@@ -78,6 +118,7 @@ elif [[ "$1" == "create" ]]; then
   }
   echo "Create monitoring compose is completed successfully"
   exit 0
+
 # Destroy the monitoring group include network and visuallizer
 elif [[ "$1" == "destroy" ]]; then
   bash -c "./setup-swarm-visuallizer.sh destroy -y"
@@ -93,9 +134,9 @@ elif [[ "$1" == "destroy" ]]; then
   }
   echo "Destroy monitoring compose is completed successfully"
   exit 0
+
 # Turn off the monitoring group
 elif [[ "$1" == "down" ]]; then
-  bash -c "./setup-swarm-visuallizer.sh destroy -y"
   {
     docker-compose -f "$abs_path_infrastructure/monitoring-compose.yaml" stop 
   } || {
@@ -103,9 +144,9 @@ elif [[ "$1" == "down" ]]; then
   }
   echo "Stop monitoring compose is completed successfully"
   exit 0
+
 # Turn on the monitoring group
 elif [[ "$1" == "up" ]]; then
-  bash -c "./setup-swarm-visuallizer.sh create -n"
   { 
     docker-compose -f "$abs_path_infrastructure/monitoring-compose.yaml" start 
   } || {

@@ -5,7 +5,7 @@ import json
 
 app = Flask(__name__)                                                                                                                                                 
 
-
+list_ip = []
 targets = [{'target': 'cadvisor.json', 'port': "8080"}, {'target': 'fluentd.json', 'port': "24224"}, {'target': 'node-exporter.json', 'port': "9100"}]
 path = '../../../Infrastructure/docker/conf/monitoring/prometheus/target/'
 
@@ -39,6 +39,13 @@ def update():
     ip = request.args.get('ip')
     hostname = request.args.get('hostname')
     update_target(ip=ip)
+    return "Ok"
+
+@app.route('/sd', methods = ['POST'])
+def sd():
+    global list_ip
+    # temp_list_ip = request.json
+    print(request.json['sd_range'])
     return "Ok"
 
 

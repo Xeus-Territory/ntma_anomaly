@@ -1,7 +1,5 @@
 upstream todo_app {
-    least_conn;
-    server 172.21.2.6:3000;
-    server 172.21.2.7:3000;
+    server todo_app:3000;
 }
 
 server{

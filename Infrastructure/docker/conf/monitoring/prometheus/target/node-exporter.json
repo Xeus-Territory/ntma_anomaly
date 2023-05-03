@@ -1,10 +1,10 @@
 [
   {
     "labels": {
-      "job": "node-exporter"
+      "job": "cadvisor"
     },
     "targets": [
-      "192.168.66.128:9100"
+      "192.168.48.128:9100:"
     ]
   }
 ]

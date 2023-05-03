@@ -21,7 +21,7 @@ groups:
         labels:
           severity: warning
 
-      # Container CPU usage => Container CPU usage is above 80%
+      # Container CPU usage => Container CPU usage is above 80% - 0.08 CPU usage
       - alert: ContainerCpuUsage
         expr: (sum(rate(container_cpu_usage_seconds_total{name!=""}[30s])) BY (instance, name) * 100) > 8
         for: 30s
