@@ -35,11 +35,11 @@ def info_service():
     output1 = subprocess.Popen(["docker", "network", "inspect", "application"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, input = subprocess.Popen(["jq", "-jr", ".[].Containers[] | select(.Name != \"application-endpoint\") | .IPv4Address, \"\\t\""], 
                             stdin=output1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-    ip_list = []
+    list_ip = []
     for x in output.decode("utf-8").split("\t"):
         if x != "":
-            ip_list.append(x.replace("/16",""))
-    return ip_list
+            list_ip.append(x.replace("/16",""))
+    return list_ip
     
 
 try:

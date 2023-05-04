@@ -24,6 +24,8 @@ monitoring_alert_prometheus = []
 total_replica = 1
 active_replica = 1
 scale_down_flag = False
+state_hook = "stable"
+state_compare = "stable"
 
 def send_test_message(data):
     """Generates a Message object and sends it to the telegram by bot
@@ -65,16 +67,18 @@ def check_health_alert(url_metric, state_health_check, deplay_check_time=30):
         deplay_check_time (int, optional): Time for check the alert status. State Pulling. Defaults to 30.
     """
     
-    global monitoring_alert_prometheus, total_replica, active_replica
+    global monitoring_alert_prometheus, total_replica, active_replica, state_hook
     while True:
         response = requests.get(url_metric)
         monitoring_alert = response.json()['data']['alerts']
         active_replica, total_replica = enum_replica()
         if len(monitoring_alert) == 0:
             monitoring_alert_prometheus = []
+            state_hook = "stable"
             time.sleep(deplay_check_time)
         if len(monitoring_alert) > 0:
             monitoring_alert_prometheus.clear()
+            state_hook = "scaling"
             for index in range(0, len(monitoring_alert)):
                 if (monitoring_alert[index]['labels']['name'] not in monitoring_alert_prometheus) and (monitoring_alert[index]['state'] in state_health_check):
                     monitoring_alert_prometheus.append(monitoring_alert[index]['labels']['name'])
@@ -141,11 +145,15 @@ def __main__():
     # Start While loop for doing the job scaling base on alert pulling
     while True: 
         try:
+            global state_hook, state_compare
+            if state_hook != state_compare:
+                requests.post("http://localhost:9999/state_update", params={'state': state_hook}, headers={'Content-Type': 'application/json'})
+                state_compare = state_hook
             print("Number of replicas [active/total]: {active}/{total}".format(active=active_replica, total=total_replica))
             print("Alert Pulling: " , monitoring_alert_prometheus)
             print("Scaling Alert: " , replica_name)
             print("Flag scaling down: ", scale_down_flag)
-            time.sleep(3)
+            # time.sleep(3)
             # The URL of Prometheus not Templated
             response = requests.get(location_prometheus)
             alerts = response.json()['data']['alerts']
