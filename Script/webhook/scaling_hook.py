@@ -95,9 +95,9 @@ def scaling_replica(name_container, time_untouchable, max_scaling_service=1):
 
     """
     global monitoring_alert_prometheus, replica_name, current_replica, scale_down_flag
-    print("Scaling up for dedicated " + name_container + " .....")
+    # print("Scaling up for dedicated " + name_container + " .....")
     os.system('./scale-service-swarm.sh ' + name_container + ' ' + "up " + str(max_scaling_service))
-    print("Scaling successful for " + name_container)
+    # print("Scaling successful for " + name_container)
     while True:
         if time_untouchable == math.inf:
             continue
@@ -111,7 +111,7 @@ def scaling_replica(name_container, time_untouchable, max_scaling_service=1):
                     scale_down_flag = True
                     os.system('./scale-service-swarm.sh ' + name_container + ' ' + "down " + str(max_scaling_service))
                     replica_name.remove(name_container)
-                    print("The current replica is scaling down, application have stable state !!!!")
+                    # print("The current replica is scaling down, application have stable state !!!!")
                     scale_down_flag = False
                     break
                 if scale_down_flag == True:
@@ -123,6 +123,8 @@ def scaling_node(max_scaling_node=1):
 
 
 def __main__():
+    """Argparse function for doing the customization of scaling
+    """    
     parser = argparse.ArgumentParser(description="Scaling Hook with Metrics and Alerts")
     parser.add_argument("-l", "--location", help="Metric collection location. Ex: http://<IP_Prometheus>/api/v1/alerts", default='http://localhost:9090/api/v1/alerts')
     parser.add_argument("-s", "--state", help="State of monitoring alert", nargs="+", default=['firing'])
@@ -147,12 +149,15 @@ def __main__():
         try:
             global state_hook, state_compare
             if state_hook != state_compare:
-                requests.post("http://localhost:9999/state_update", params={'state': state_hook}, headers={'Content-Type': 'application/json'})
+                try:
+                    requests.post("http://worker_manager:9999/state_update", params={'state': state_hook}, headers={'Content-Type': 'application/json'})
+                except:
+                    requests.post("http://localhost:9999/state_update", params={'state': state_hook}, headers={'Content-Type': 'application/json'})
                 state_compare = state_hook
-            print("Number of replicas [active/total]: {active}/{total}".format(active=active_replica, total=total_replica))
-            print("Alert Pulling: " , monitoring_alert_prometheus)
-            print("Scaling Alert: " , replica_name)
-            print("Flag scaling down: ", scale_down_flag)
+            # print("Number of replicas [active/total]: {active}/{total}".format(active=active_replica, total=total_replica))
+            # print("Alert Pulling: " , monitoring_alert_prometheus)
+            # print("Scaling Alert: " , replica_name)
+            # print("Flag scaling down: ", scale_down_flag)
             # time.sleep(3)
             # The URL of Prometheus not Templated
             response = requests.get(location_prometheus)

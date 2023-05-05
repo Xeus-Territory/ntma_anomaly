@@ -5,8 +5,9 @@ RUN apt update && \
     docker.io \
     python3 \
     python3-pip \
-    apache2-utils
+    apache2-utils \
+    jq
 
 RUN mkdir app && \
-    git clone https://github.com/Xeus-Territory/NTMA_Anomaly.git /app/NTMA_Anomaly && \
+    git clone https://github.com/Xeus-Territory/NTMA_Anomaly.git -b feature/separate_infrastructure /app/NTMA_Anomaly && \
     pip install -r /app/NTMA_Anomaly/Script/requirements.txt
