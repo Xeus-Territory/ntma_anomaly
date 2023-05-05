@@ -1,7 +1,7 @@
 import json
 import requests
 import argparse
-from sys import argv, path
+from sys import argv
 import time
 import random
 import os
