@@ -15,10 +15,12 @@ services:
           memory: 500M
       placement:
         constraints:
-          - "node.role==worker"
+          - "node.role==manager"
     entrypoint:
       - python3
-      - worker-manager.py
+      - worker-manage.py
+    ports:
+      - 9999:9999
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -30,50 +32,53 @@ services:
     networks:
       - wkernet
 
-  #   slave:
-  #     image: agent-script:v0.0.1
-  #     working_dir: /app/NTMA_Anomaly/Script/worker/python
-  #     deploy:
-  #       resources:
-  #         limits:
-  #           cpus: '0.50'
-  #           memory: 500M
-  #       placement:
-  #         constraints:
-  #         - "node.role==worker"
-  #       mode: global
-  #     entrypoint:
-  #       - python3
-  #       - worker-slave.py
-  #     extra_hosts:
-  #       - "host.docker.internal:host-gateway"
-  #     volumes:
-  #       - /var/run/docker.sock:/var/run/docker.sock
-  #     depends_on:
-  #       - manager
-  #     networks:
-  #       - wkernet
+  slave:
+    image: agent-script:v0.0.1
+    working_dir: /app/NTMA_Anomaly/Script/worker/python
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 500M
+      placement:
+        constraints:
+        - "node.role==worker"
+      mode: global
+    entrypoint:
+      - python3
+      - worker-slave.py
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - manager
+    networks:
+      - wkernet
   
-  # hook:
-  #   image: agent-script:v0.0.1
-  #   working_dir: /app/NTMA_Anomaly/Script/webhook
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: '0.50'
-  #         memory: 500M
-  #   entrypoint:
-  #     - python3
-  #     - scaling_hook.py
-  #     - ${PARAMs}
-  #   extra_hosts:
-  #   - "host.docker.internal:host-gateway"
-  #   env_file:
-  #     - .env
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  #   depends_on:
-  #     - manager
-  #   networks:
-  #     - wkernet
+  hook:
+    image: agent-script:v0.0.1
+    working_dir: /app/NTMA_Anomaly/Script/webhook
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 500M
+      placement:
+        constraints:
+        - "node.role==manager"
+    entrypoint: "python3 scaling_hook.py -l http://192.168.66.1:9090/api/v1/alerts -tm 0 -ti 30"
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
+    env_file:
+      - .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - manager
+      - slave 
+    networks:
+      - wkernet
     

@@ -43,12 +43,12 @@ def info_service():
     
 
 try:
-    hostname, ip = info_host()
-    params = {'hostname': hostname, 'ip': ip}
-    requests.post("http://" + IP_MANAGER + ":" + OPENPORT + "/update", params=params, headers={"Content-Type": "application/json"})
+    # hostname, ip = info_host()
+    # params = {'hostname': hostname, 'ip': ip}
+    # requests.post("http://" + IP_MANAGER + ":" + OPENPORT + "/update", params=params, headers={"Content-Type": "application/json"})
     while True:
         ip_list = {'sd_range': info_service()}
-        requests.post("http://" + IP_MANAGER + ":" + OPENPORT + '/sd', data=json.dumps(ip_list), headers={"Content-Type": "application/json"})
+        requests.post("http://" + str(IP_MANAGER) + ":" + str(OPENPORT) + '/sd', data=json.dumps(ip_list), headers={"Content-Type": "application/json"})
         time.sleep(5)
 except Exception as e: 
     print("Error occur: ", e)

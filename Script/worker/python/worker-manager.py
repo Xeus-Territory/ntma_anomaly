@@ -3,13 +3,22 @@ import requests
 import os
 import json
 import subprocess
+from dotenv import load_dotenv
+
+load_dotenv()
+NAME_MANAGER=os.getenv('NAME_MANAGER')
 
 app = Flask(__name__)                                                                                                                                                 
 
 list_ip = []
+name_worker = []
 state = "stable"
 targets = [{'target': 'cadvisor.json', 'port': "8080"}, {'target': 'fluentd.json', 'port': "24224"}, {'target': 'node-exporter.json', 'port': "9100"}]
 path = '../../../Infrastructure/docker/conf/monitoring/prometheus/target/'
+
+def detect_worker():
+    global name_worker
+    output1 = subprocess.Popen(['docker', 'node', 'ls'], )
 
 def update_target(ip):
     for target in targets:
