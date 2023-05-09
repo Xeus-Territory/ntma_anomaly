@@ -11,16 +11,32 @@ NAME_MANAGER=os.getenv('NAME_MANAGER')
 app = Flask(__name__)                                                                                                                                                 
 
 list_ip = []
-name_worker = []
+worker_info = []
 state = "stable"
-targets = [{'target': 'cadvisor.json', 'port': "8080"}, {'target': 'fluentd.json', 'port': "24224"}, {'target': 'node-exporter.json', 'port': "9100"}]
+targets = [{'target': 'cadvisor.json', 'port': "8080"}, # {'target': 'fluentd.json', 'port': "24224"}, 
+           {'target': 'node-exporter.json', 'port': "9100"}]
 path = '../../../Infrastructure/docker/conf/monitoring/prometheus/target/'
 
 def detect_worker():
-    global name_worker
-    output1 = subprocess.Popen(['docker', 'node', 'ls'], )
-
-def update_target(ip):
+    global worker_info
+    output1 = subprocess.Popen(['docker', 'node', 'ls'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output2 = subprocess.Popen(['grep', '-wv', str(NAME_MANAGER)], stdin=output1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output, input = subprocess.Popen(['awk', '(NR>1){print $2}'], stdin= output2.stdout, stdout=subprocess.PIPE ,stderr=subprocess.PIPE).communicate()
+    for name in output.decode('utf-8').split('\n'):
+        if name != "":
+            worker_sd = { "name" : str(name), "ip": ""}
+            out1 = subprocess.Popen(['docker', 'node', 'inspect', str(name)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, inp = subprocess.Popen(['jq', '.[].Status.Addr'], stdin=out1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            IP = out.decode('utf-8').replace("\n", "").replace("\"", "")
+            worker_sd["ip"] = str(IP)
+            res = list(filter(lambda name_worker: name_worker["name"] == str(name), worker_info))
+            if res != worker_sd:
+                worker_info.append(worker_sd)
+                update_worker_service(IP)
+            else:
+                continue
+            
+def update_worker_service(ip):
     for target in targets:
         targ = ip + ":" + target['port']
         with open(file=path+target['target'], mode='r+') as file:
@@ -93,6 +109,11 @@ def state_update():
     global state
     state = request.args.get('state')
     return "Ok"
+
+@app.route('/join', methods=['POST'])
+def join():
+    detect_worker()
+    return "Ok"
     
 
 @app.route('/update', methods=['POST'])
@@ -102,7 +123,7 @@ def update():
     """  
     ip = request.args.get('ip')
     hostname = request.args.get('hostname')
-    update_target(ip=ip)
+    update_worker_service(ip=ip)
     return "Ok"
 
 @app.route('/sd', methods = ['POST'])
@@ -119,4 +140,5 @@ def sd():
         sd_nginx(list_ip)
         return "Ok"
 
-app.run(host='0.0.0.0', port='9999')
+detect_worker()
+# app.run(host='0.0.0.0', port='9999')

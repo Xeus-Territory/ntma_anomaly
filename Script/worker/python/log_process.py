@@ -23,7 +23,7 @@ def check_pattern_log_datetime(log_file_path):
         r'\[(?P<time_local>.*?)\]\s'                    # Check time_local like [04/Apr/2023:07:11:48 +0000], return string inside the brackets
         r'\"(?P<request_method>[A-Z]+)\s'               # Check request method like GET, POST, PUT, DELETE
         r'(?P<request_url>[^"]+)\s'                     # Check request uri like /js/react-dom.production.min.js
-        r'(?P<http_version>HTTP\/\d\.\d)\"\s'            # Check http version like HTTP/1.1
+        r'(?P<http_version>HTTP\/\d\.\d)\"\s'           # Check http version like HTTP/1.1
         r'\"(?P<request_body>.*?)\"\s'                  # Check request body
         r'(?P<status>\d+)\s'                            # Check the status respone 304, 200, ...
         r'(?P<body_bytes_sent>\d+)\s'                   # Get the number byte send, for purpose like 0, 255
