@@ -140,6 +140,8 @@ def __main__():
     metric_server_state= opt.metric_server
     time_interval = opt.time_interval   
     time_metric = opt.time_metric
+
+    print(location_prometheus)
     
     # Start thread for checking health of prometheus 
     threading.Thread(target=check_health_alert, args=(location_prometheus, state_alert, time_metric)).start()

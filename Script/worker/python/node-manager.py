@@ -140,5 +140,4 @@ def sd():
         sd_nginx(list_ip)
         return "Ok"
 
-detect_worker()
-# app.run(host='0.0.0.0', port='9999')
+app.run(host='0.0.0.0', port='9999')
