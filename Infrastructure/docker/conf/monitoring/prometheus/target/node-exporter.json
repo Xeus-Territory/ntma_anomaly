@@ -1,7 +1,7 @@
 [
   {
     "labels": {
-      "job": "cadvisor"
+      "job": "node-exporter"
     },
     "targets": [
     ]

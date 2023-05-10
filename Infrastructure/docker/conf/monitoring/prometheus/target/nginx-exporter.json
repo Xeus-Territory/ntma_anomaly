@@ -1,10 +1,9 @@
 [
   {
     "labels": {
-      "job": "cadvisor"
+      "job": "nginx-exporter"
     },
     "targets": [
-      "192.168.66.1:9113"
     ]
   }
 ]

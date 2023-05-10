@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 NAME_MANAGER=os.getenv('NAME_MANAGER')
+IP_MANAGER=str(os.getenv('IP_MANAGER'))
 
 app = Flask(__name__)                                                                                                                                                 
 
@@ -18,6 +19,9 @@ targets = [{'target': 'cadvisor.json', 'port': "8080"}, # {'target': 'fluentd.js
 path = '../../../Infrastructure/docker/conf/monitoring/prometheus/target/'
 
 def detect_worker():
+    """
+        Detects a worker join into a docker swarm cluster
+    """    
     global worker_info
     output1 = subprocess.Popen(['docker', 'node', 'ls'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output2 = subprocess.Popen(['grep', '-wv', str(NAME_MANAGER)], stdin=output1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -35,15 +39,54 @@ def detect_worker():
                 update_worker_service(IP)
             else:
                 continue
+
+def update_manager_service(ip):
+    """Update the manager service for prometheus target
+
+    Args:
+        ip (str): The Ip of docker manager where have nginx-exporter service is installed
+    """    
+    if ip == "":
+        return
+    targ = ip + ":" + "9113"
+    with open(file=path+"nginx-exporter.json", mode='r+') as file:
+        try:
+            data = json.load(file)
+            if targ not in data[0]['targets']:
+                data[0]['targets'].append(targ)
+            else:
+                print("Same !! Ignore it")
+            file.seek(0)
+            json.dump(data, file, indent=2)
+        except json.decoder.JSONDecodeError:
+            template = [
+                        {
+                            "labels": {
+                            "job": "nginx-exporter"
+                            },
+                            "targets": [
+                            ]
+                        }
+                        ]
+            template[0]['targets'].append(targ)
+            file.seek(0)
+            json.dump(template, file, indent=2)
             
 def update_worker_service(ip):
+    """Update the worker service for the prometheus target
+
+    Args:
+        ip (str): The ip address of the worker node join into docker swarm cluster
+    """    
+    if ip == "":
+        return
     for target in targets:
         targ = ip + ":" + target['port']
         with open(file=path+target['target'], mode='r+') as file:
             try:
                 data = json.load(file)
                 if targ not in data[0]['targets']:
-                    data[0]['targets'].append(ip + ":" + target['port'])
+                    data[0]['targets'].append(targ)
                 else:
                     print("Same !! Ignore it")
                 file.seek(0)
@@ -58,11 +101,17 @@ def update_worker_service(ip):
                                 ]
                             }
                             ]
-                template[0]['targets'].append(ip + ":" + target['port'])
+                template[0]['targets'].append(targ)
                 file.seek(0)
                 json.dump(template, file, indent=2)
                 
 def sd_nginx(list_ip):
+    """The module for managing the confi of nginx for change round-robin to lease connection and reverse
+
+    Args:
+        list_ip (list[str]): list of IP addresses of container have running the application 
+        for put into upstream inside nginx container
+    """    
     global state
     output1= subprocess.Popen(['docker', 'ps'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, int= subprocess.Popen(['grep', "-oE", "todo_server\.1\.[a-z0-9]+"], stdin=output1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
@@ -106,20 +155,32 @@ server{
     
 @app.route('/state_update', methods=['POST'])
 def state_update():
+    """Update the state of system on state scaling or stable for doing a job with that flag
+
+    Returns:
+        str: just return the str for resprsent for this route
+    """    
     global state
     state = request.args.get('state')
     return "Ok"
 
 @app.route('/join', methods=['POST'])
 def join():
+    """Update the worker join into the swarm cluster on role worker node
+
+    Returns:
+        str: just return the str for resprsent for this route
+    """    
     detect_worker()
     return "Ok"
     
 
 @app.route('/update', methods=['POST'])
 def update():
-    """
-    Receive the infomation from slave and update into prometheus configuration
+    """Receive the infomation from slave and update into prometheus configuration
+    
+    Returns:
+        str: just return the str for resprsent for this route
     """  
     ip = request.args.get('ip')
     hostname = request.args.get('hostname')
@@ -128,6 +189,11 @@ def update():
 
 @app.route('/sd', methods = ['POST'])
 def sd():
+    """Receive the request for service discovery for update the nginx service 
+    
+    Returns:
+        str: just return the str for resprsent for this route
+    """  
     global list_ip, state
     temp_list_ip = request.json['sd_range']
     if list_ip == temp_list_ip:
@@ -140,4 +206,10 @@ def sd():
         sd_nginx(list_ip)
         return "Ok"
 
-app.run(host='0.0.0.0', port='9999')
+def __main__():
+    update_manager_service(IP_MANAGER)
+
+    app.run(host='0.0.0.0', port='9999')
+    
+if __name__ == '__main__':
+    __main__()

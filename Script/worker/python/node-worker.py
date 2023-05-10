@@ -41,16 +41,19 @@ def info_service():
             list_ip.append(x.replace("/16",""))
     return list_ip
     
-
-try:
-    # hostname, ip = info_host()
-    # params = {'hostname': hostname, 'ip': ip}
-    # requests.post("http://" + str(IP_MANAGER) + ":" + str(OPENPORT) + "/update", params=params, headers={"Content-Type": "application/json"})
-    requests.post("http://" + str(IP_MANAGER) + ":" + str(OPENPORT) + "/join")
-    while True:
-        ip_list = {'sd_range': info_service()}
-        requests.post("http://" + str(IP_MANAGER) + ":" + str(OPENPORT) + '/sd', data=json.dumps(ip_list), headers={"Content-Type": "application/json"})
-        time.sleep(5)
-except Exception as e: 
-    print("Error occur: ", e)
+def __main__():
+    try:
+        # hostname, ip = info_host()
+        # params = {'hostname': hostname, 'ip': ip}
+        # requests.post("http://" + str(IP_MANAGER) + ":" + str(OPENPORT) + "/update", params=params, headers={"Content-Type": "application/json"})
+        requests.post("http://" + str(IP_MANAGER) + ":" + str(OPENPORT) + "/join")
+        while True:
+            ip_list = {'sd_range': info_service()}
+            requests.post("http://" + str(IP_MANAGER) + ":" + str(OPENPORT) + '/sd', data=json.dumps(ip_list), headers={"Content-Type": "application/json"})
+            time.sleep(5)
+    except Exception as e: 
+        print("Error occur: ", e)
+        
+if __name__ == "__main__":
+    __main__()
 
