@@ -142,7 +142,13 @@ server{
         allow 172.21.0.0/16;
         deny all;
     }  
-}'''
+}
+
+
+
+
+
+'''
             conf_file = open("../../../Infrastructure/docker/conf/nginx/nginx-default.conf", "r+")
             conf_file.write(template)
             conf_file.close()

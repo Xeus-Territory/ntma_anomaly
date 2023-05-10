@@ -21,6 +21,8 @@ services:
       - node-manager.py
     ports:
       - 9999:9999
+    env_file:
+      - .env
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -29,6 +31,7 @@ services:
       - ./Infrastructure/docker/conf/monitoring/prometheus/target/cadvisor.json:/app/NTMA_Anomaly/Infrastructure/docker/conf/monitoring/prometheus/target/cadvisor.json
       - ./Infrastructure/docker/conf/monitoring/prometheus/target/fluentd.json:/app/NTMA_Anomaly/Infrastructure/docker/conf/monitoring/prometheus/target/fluentd.json
       - ./Infrastructure/docker/conf/monitoring/prometheus/target/node-exporter.json:/app/NTMA_Anomaly/Infrastructure/docker/conf/monitoring/prometheus/target/node-exporter.json
+      - ./Infrastructure/docker/conf/monitoring/prometheus/target/nginx-exporter.json:/app/NTMA_Anomaly/Infrastructure/docker/conf/monitoring/prometheus/target/nginx-exporter.json
     networks:
       - wkernet
 
