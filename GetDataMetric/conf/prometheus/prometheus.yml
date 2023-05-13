@@ -22,16 +22,16 @@ scrape_configs:
   - job_name: 'nginx-log'
     scrape_interval: 5s
     static_configs:
-    - targets: ['192.168.127.128:4040']
+    - targets: ['nginxlog_exporter:4040']
 
   - job_name: 'cadvisor'
     scrape_interval: 5s
     static_configs:
-    - targets: ['cadvisor:8080']
+      - targets: ['cadvisor:8080']
 
 remote_write:
-      - url: "http://192.168.127.128:8080/receive"
+      - url: "http://prometheus-kafka-adapter:8080/receive"
         write_relabel_configs:
         - source_labels: [__name__]
-          regex: "service_avg_cpu_usage_percentage|service_avg_memory_usage_percentage|service_avg_network_receive_bytes|service_avg_network_transmit_bytes|myapp_http_upstream_time_seconds_s200_p50|myapp_http_upstream_time_seconds_s200_p90|myapp_http_upstream_time_seconds_s200_p99"
+          regex: "service_avg_cpu_usage_percentage|service_avg_memory_usage_percentage|service_avg_network_receive_bytes|service_avg_network_transmit_bytes|nginx_http_upstream_time_seconds_s200_p50|nginx_http_upstream_time_seconds_s200_p90|nginx_http_upstream_time_seconds_s200_p99"
           action: keep

@@ -1,43 +1,10 @@
 version: '3'
 
-services:
-  redis:
-    image: redis:alpine3.17
-    container_name: redis
-    ports:
-      - 6379:6379
+volumes:
+  prometheus_data: {}
+  redis_data: {}
 
-  zookeeper:
-    image: wurstmeister/zookeeper
-    container_name: zookeeper
-    ports:
-      - "2181:2181"
-    depends_on:
-      - redis
-
-  kafka:
-    image: wurstmeister/kafka
-    container_name: kafka
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_ADVERTISED_HOST_NAME: 192.168.127.128
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-    depends_on:
-      - redis
-
-  prometheus-kafka-adapter:
-    image: telefonica/prometheus-kafka-adapter:1.8.0
-    container_name: prometheus-kafka-adapter
-    ports:
-      - "8080:8080"
-    environment:
-      KAFKA_BROKERS: kafka:9092
-      KAFKA_TOPIC: prometheus-metrics
-    depends_on:
-      - redis
-      - kafka
-
+services:  
   prometheus:
     image: prom/prometheus:v2.37.6
     deploy:
@@ -64,9 +31,24 @@ services:
       - ./monitoring/prometheus/:/etc/prometheus/
     ports:
       - 9090:9090
-    depends_on:
-      - redis
 
+  nginxlog_exporter:
+    image: quay.io/martinhelmich/prometheus-nginxlog-exporter:v1.10.0
+    container_name: nginxlog-exporter
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 200M
+        reservations:
+          cpus: '0.25'
+          memory: 100M
+    command:
+      - '--config-file=/etc/prometheus-nginxlog-exporter.yml'
+    volumes:
+      - /home/monitoring/NTMA_Anomaly/Infrastructure/docker/log/access.log:/mnt/nginxlogs/access.log
+      - ./nginxlog/nginxlog_exporter.yml:/etc/prometheus-nginxlog-exporter.yml
+  
   cadvisor:
     image: gcr.io/google-containers/cadvisor:v0.36.0
     deploy:
@@ -80,7 +62,7 @@ services:
     container_name: cadvisor
     restart: unless-stopped
     healthcheck:
-      test: wget --quiet --tries=1 --spider http://localhost:8085/containers/
+      test: wget --quiet --tries=1 --spider http://localhost:8080/containers/
       interval: 30s
       timeout: 10s
       retries: 5
@@ -90,9 +72,87 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
-    ports:
-    - 8085:8080
+  
+  prometheus-kafka-adapter:
+    image: telefonica/prometheus-kafka-adapter:1.8.0
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 200M
+        reservations:
+          cpus: '0.25'
+          memory: 100M
+    container_name: prometheus-kafka-adapter
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC: prometheus-metrics
+    depends_on:
+      - kafka
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 200M
+        reservations:
+          cpus: '0.25'
+          memory: 100M
+    restart: unless-stopped
+    healthcheck:
+      test: nc -z localhost 2181 || exit -1
+      interval: 30s
+      timeout: 10s
+      retries: 5
     depends_on:
       - redis
 
-# Add service prometheus-nginxlog-exporter
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 500M
+        reservations:
+          cpus: '0.25'
+          memory: 100M
+    restart: unless-stopped
+    healthcheck:
+      test: nc -z localhost 9092 || exit -1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: 192.168.127.128
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    depends_on:
+      - zookeeper
+
+  redis:
+    image: redis:alpine3.17
+    container_name: redis
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 200M
+        reservations:
+          cpus: '0.25'
+          memory: 100M
+    restart: unless-stopped
+    healthcheck:
+      test: nc -z localhost 6379 || exit -1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - redis_data:/data
+    ports:
+      - 6379:6379
