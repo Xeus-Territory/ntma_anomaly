@@ -156,7 +156,7 @@ services:
       - redis_data:/data
 
   kafka-python:
-    image: python-kafka:v1.0.0
+    image: markpage2k1/python-kafka:v1.0.0
     container_name: kafka-python
     deploy:
       resources:
