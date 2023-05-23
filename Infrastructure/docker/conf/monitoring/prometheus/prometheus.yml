@@ -14,6 +14,7 @@ alerting:
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
     - "alert.rules.yml"
+    - "metrics.rules.yml"
 
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Prometheus itself.
@@ -30,8 +31,14 @@ scrape_configs:
   file_sd_configs:
   - files:
       - "./target/nginx-exporter.json"
-- job_name: 'fluentd'
+- job_name: 'nginxlog-exporter'
   file_sd_configs:
   - files:
-      - "./target/fluentd.json"
+      - "./target/nginxlog-exporter.json"
 
+remote_write:
+      - url: "http://prometheus-kafka-adapter:8080/receive"
+        write_relabel_configs:
+        - source_labels: [__name__]
+          regex: "service_avg_cpu_usage_percentage|service_avg_memory_usage_percentage|service_avg_network_receive_bytes|service_avg_network_transmit_bytes|nginx_avg_respone_time|nginx_requests_per_second|nginx_received_http_traffic|nginx_sent_http_traffic"
+          action: keep

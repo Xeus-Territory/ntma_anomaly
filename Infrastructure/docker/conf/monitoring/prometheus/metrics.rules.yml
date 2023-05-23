@@ -1,0 +1,28 @@
+groups:
+  - name: Todo_app_service
+    interval: 5s
+    rules:
+      - record: service_avg_cpu_usage_percentage
+        expr: avg(rate(container_cpu_usage_seconds_total{name=~"todo_app.+"}[5m])) by (container_label_com_docker_swarm_service_name) * 100
+
+      - record: service_avg_memory_usage_percentage
+        expr: avg (container_memory_working_set_bytes{name=~"todo_app.+"} / container_spec_memory_limit_bytes{name=~"todo_app.+"}) by (container_label_com_docker_swarm_service_name) * 100
+
+      - record: service_avg_network_receive_bytes
+        expr: avg(sum(rate(container_network_receive_bytes_total{name=~"todo_app.+"}[5m])) by (name))
+
+      - record: service_avg_network_transmit_bytes
+        expr: avg(sum(rate(container_network_transmit_bytes_total{name=~"todo_app.+"}[5m])) by (name))
+
+      - record: nginx_avg_respone_time
+        expr: sum(rate(nginx_http_response_time_seconds_sum[5m])) by (instance) / sum(rate(nginx_http_response_time_seconds_count[5m])) by (instance)
+
+      - record: nginx_requests_per_second
+        expr: round(sum(rate(nginx_http_response_time_seconds_count[1m])) by (instance) * 60)
+
+      - record: nginx_received_http_traffic
+        expr: (sum(rate(nginx_http_request_size_bytes[1m])) by (instance) / 2) * 100
+
+      - record: nginx_sent_http_traffic
+        expr: (sum(rate(nginx_http_response_size_bytes[1m])) by (instance) / 2) * 100
+      

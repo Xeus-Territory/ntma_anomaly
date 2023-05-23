@@ -14,8 +14,9 @@ app = Flask(__name__)
 list_ip = []
 worker_info = []
 state = "stable"
-targets = [{'target': 'cadvisor.json', 'port': "8080"}, # {'target': 'fluentd.json', 'port': "24224"}, 
+targets_worker = [{'target': 'cadvisor.json', 'port': "8080"}, # {'target': 'fluentd.json', 'port': "24224"}, 
            {'target': 'node-exporter.json', 'port': "9100"}]
+targets_manager = [{'target': 'nginx-exporter.json', 'port': "9113"}, {'target': 'nginxlog-exporter.json', 'port': "4040"}]          
 path = '../../../Infrastructure/docker/conf/monitoring/prometheus/target/'
 
 def detect_worker():
@@ -39,40 +40,8 @@ def detect_worker():
                 update_worker_service(IP)
             else:
                 continue
-
-def update_manager_service(ip):
-    """Update the manager service for prometheus target
-
-    Args:
-        ip (str): The Ip of docker manager where have nginx-exporter service is installed
-    """    
-    if ip == "":
-        return
-    targ = ip + ":" + "9113"
-    with open(file=path+"nginx-exporter.json", mode='r+') as file:
-        try:
-            data = json.load(file)
-            if targ not in data[0]['targets']:
-                data[0]['targets'].append(targ)
-            else:
-                print("Same !! Ignore it")
-            file.seek(0)
-            json.dump(data, file, indent=2)
-        except json.decoder.JSONDecodeError:
-            template = [
-                        {
-                            "labels": {
-                            "job": "nginx-exporter"
-                            },
-                            "targets": [
-                            ]
-                        }
-                        ]
-            template[0]['targets'].append(targ)
-            file.seek(0)
-            json.dump(template, file, indent=2)
             
-def update_worker_service(ip):
+def update_service(ip, targets):
     """Update the worker service for the prometheus target
 
     Args:
@@ -185,7 +154,7 @@ def update():
     """  
     ip = request.args.get('ip')
     hostname = request.args.get('hostname')
-    update_worker_service(ip=ip)
+    update_service(ip=ip, targets=targets_worker)
     return "Ok"
 
 @app.route('/sd', methods = ['POST'])
@@ -208,7 +177,7 @@ def sd():
         return "Ok"
 
 def __main__():
-    update_manager_service(IP_MANAGER)
+    update_service(ip=IP_MANAGER, targets=targets_manager)
 
     app.run(host='0.0.0.0', port='9999')
     

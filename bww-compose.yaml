@@ -32,6 +32,8 @@ services:
       - ./Infrastructure/docker/conf/monitoring/prometheus/target/fluentd.json:/app/NTMA_Anomaly/Infrastructure/docker/conf/monitoring/prometheus/target/fluentd.json
       - ./Infrastructure/docker/conf/monitoring/prometheus/target/node-exporter.json:/app/NTMA_Anomaly/Infrastructure/docker/conf/monitoring/prometheus/target/node-exporter.json
       - ./Infrastructure/docker/conf/monitoring/prometheus/target/nginx-exporter.json:/app/NTMA_Anomaly/Infrastructure/docker/conf/monitoring/prometheus/target/nginx-exporter.json
+      - ./Infrastructure/docker/conf/monitoring/prometheus/target/nginxlog-exporter.json:/app/NTMA_Anomaly/Infrastructure/docker/conf/monitoring/prometheus/target/nginxlog-exporter.json
+
     networks:
       - wkernet
 

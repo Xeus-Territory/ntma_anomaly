@@ -30,7 +30,7 @@ services:
       resources:
         limits:
           cpus: '0.1'
-          memory: 200M
+          memory: 100M
       replicas: 2
       placement:
         constraints:
