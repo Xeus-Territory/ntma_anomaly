@@ -1,0 +1,25 @@
+global:
+  resolve_timeout: 1m
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 30s
+  repeat_interval: 10s
+  receiver: 'webhook_python'
+
+  routes:
+    - receiver: 'webhook_python'
+
+receivers:
+  - name: webhook_python
+    webhook_configs:
+    - url: "http://192.168.48.1:5000/alerts"
+      send_resolved: true
+      
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']

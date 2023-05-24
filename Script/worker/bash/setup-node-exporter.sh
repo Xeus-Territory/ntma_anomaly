@@ -39,6 +39,14 @@ elif [[ "$1" == "destroy" ]]; then
     sudo rm -rf /usr/local/bin/node_exporter
     echo "Node_exporter is stopped and removed successfully"
     exit 0
+elif [[ "$1" == "down" ]]; then
+    # Stop service node exporter
+    sudo systemctl stop node_exporter.service 2> /dev/null || (echo "Not exist a node exporter service, check again" | exit 1)
+    echo "Node-exporter is stopped successfully"
+elif [[ "$1" == "up" ]]; then
+    # Start stop service node exporter
+    sudo systemctl start node_exporter.service 2> /dev/null || (echo "Not exist a node exporter service, check again" | exit 1)
+    echo "Node-exporter is started successfully"
 else
     echo "Unknow option do you want, add option and try again"
     exit 1

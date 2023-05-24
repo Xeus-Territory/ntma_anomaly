@@ -1,0 +1,43 @@
+groups:
+  - name: AllInstances
+    rules:
+      # Host out of memory => Node memory is filling up (< 10% left)
+      - alert: HostOutOfMemory
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10
+        for: 30s
+        annotations:
+          summary: Host out of memory (instance {{ $labels.instance }})
+          description: "\n      → Node memory is filling up (< 10% left)\n      → Value = {{ $value }}\n      → Labels = {{ $labels }}"
+        labels:
+          severity: warning
+
+      # Host high CPU load => CPU load is > 80%
+      - alert: HostHighCpuLoad
+        expr: sum by (instance) (avg by (mode, instance) (rate(node_cpu_seconds_total{mode!="idle"}[30s]))) > 0.8
+        for: 30s
+        annotations:
+          summary: Host high CPU load (instance {{ $labels.instance }})
+          description: "\n      → CPU load is > 80%\n      → Value = {{ $value }}\n      → Labels = {{ $labels }}"
+        labels:
+          severity: warning
+
+      # Container CPU usage => Container CPU usage is above 80% - 0.08 CPU usage
+      - alert: ContainerCpuUsage
+        expr: (sum(rate(container_cpu_usage_seconds_total{name!=""}[30s])) BY (instance, name) * 100) > 8
+        for: 30s
+        annotations:
+          summary: Container CPU usage (instance {{ $labels.instance }})
+          description: "\n      → Container CPU usage is above 80%\n      → Value = {{ $value }}\n      → Labels = {{ $labels }}"
+        labels:
+          severity: warning
+
+      # Container Memory usage => Container Memory usage is above 80%
+      # See https://medium.com/faun/how-much-is-too-much-the-linux-oomkiller-and-used-memory-d32186f29c9d
+      - alert: ContainerMemoryUsage
+        expr: (sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80
+        for: 30s
+        annotations:
+          summary: Container Memory usage (instance {{ $labels.instance }})
+          description: "\n      → Container Memory usage is above 80%\n      → Value = {{ $value }}\n      → Labels = {{ $labels }}"
+        labels:
+          severity: warning

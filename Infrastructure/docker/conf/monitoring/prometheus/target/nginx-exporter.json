@@ -1,0 +1,9 @@
+[
+  {
+    "labels": {
+      "job": "nginx-exporter"
+    },
+    "targets": [
+    ]
+  }
+]

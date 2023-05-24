@@ -1,12 +1,11 @@
 import json
 import requests
 import argparse
-from sys import argv, path
+from sys import argv
 import time
 import random
 import os
 import datetime
-
 
 def generate_random_todo(type):
     """
@@ -216,9 +215,13 @@ def benchmark_todo(location_uri = "localhost", port = "80",  protocol = "http",
         worker (int, optional): Number of worker to do the job request. Defaults to 10.
         number_requests (int, optional): Number of request. Defaults to 1000.
     """
+    if set_timeout == 0:
+        os.system("ab" + " -n " + str(number_requests) + " -c " + str(worker) + " " 
+                  + protocol + "://" + location_uri + ":" + port + dir_point + " || exit 1")
     
-    os.system("ab" + " -n " + str(number_requests) + " -c " + str(worker) + " -t " 
-              + str(set_timeout) + " " + protocol + "://" + location_uri + ":" + port + dir_point)
+    else:
+        os.system("ab" + " -n " + str(number_requests) + " -c " + str(worker) + " -t " + str(set_timeout) 
+                  + " " + protocol + "://" + location_uri + ":" + port + dir_point + " || exit 1")
 
 
 def __main__():

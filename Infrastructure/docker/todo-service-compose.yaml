@@ -1,0 +1,54 @@
+version: "3"
+
+networks:
+  application:
+    external: true
+
+services:
+  mysql:
+    image: mysql:8.0
+    volumes:
+      - todo-mysql-data:/var/lib/mysql
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+      replicas: 1
+      placement:
+        constraints:
+          - "node.role==manager"
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: todos
+    networks:
+      - application
+  app:
+    image: application:v0.0.1
+    command: sh -c "yarn run dev"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 100M
+      replicas: 2
+      placement:
+        constraints:
+          - "node.role==worker"
+    healthcheck:
+      test: "wget --quiet --tries=1 --spider http://localhost:3000 || exit 1"
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    environment:
+      MYSQL_HOST: todo_mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
+      MYSQL_DB: todos
+    networks:
+      - application
+    depends_on:
+      - mysql
+
+volumes:
+  todo-mysql-data:
