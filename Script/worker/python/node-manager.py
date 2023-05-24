@@ -37,7 +37,7 @@ def detect_worker():
             res = list(filter(lambda name_worker: name_worker["name"] == str(name), worker_info))
             if res != worker_sd:
                 worker_info.append(worker_sd)
-                update_worker_service(IP)
+                update_service(ip=IP, targets=targets_worker)
             else:
                 continue
             

@@ -18,9 +18,6 @@ services:
         limits:
           cpus: '0.50'
           memory: 200M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     container_name: prometheus-kafka-adapter
     # ports:
     #   - 8080:8080
@@ -41,9 +38,6 @@ services:
         limits:
           cpus: '0.50'
           memory: 200M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     restart: unless-stopped
     healthcheck:
       test: nc -z localhost 2181 || exit -1
@@ -66,9 +60,6 @@ services:
         limits:
           cpus: '0.50'
           memory: 500M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     restart: unless-stopped
     healthcheck:
       test: nc -z localhost 9092 || exit -1
@@ -94,9 +85,6 @@ services:
         limits:
           cpus: '0.50'
           memory: 200M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     restart: unless-stopped
     healthcheck:
       test: nc -z localhost 6379 || exit -1
@@ -116,9 +104,6 @@ services:
         limits:
           cpus: '0.50'
           memory: 200M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     restart: unless-stopped
     environment:
       REDIS_HOSTNAME: redis

@@ -121,7 +121,6 @@ elif [[ "$1" == "create" ]]; then
 
 # Destroy the monitoring group include network and visuallizer
 elif [[ "$1" == "destroy" ]]; then
-  bash -c "./setup-swarm-visuallizer.sh destroy -y"
   {
     docker-compose -f "$abs_path_infrastructure/monitoring-compose.yaml" down
   } || {
@@ -154,4 +153,7 @@ elif [[ "$1" == "up" ]]; then
   }
   echo "Start monitoring compose is completed successfully"
   exit 0
+else
+    echo "Error: Missing argument for option or wrong option, add and retry..."
+    exit 1
 fi

@@ -101,9 +101,6 @@ services:
         limits:
           cpus: '0.50'
           memory: 200M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     container_name: nginxlog-exporter
     command:
       - '--config-file=/etc/prometheus-nginxlog-exporter.yml'
@@ -116,34 +113,3 @@ services:
       org.label-schema.group: "monitoring"
     networks:
       - "monitoring"
-
-  # node_exporter:
-  #   image: prom/node-exporter:v1.5.0
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: '0.50'
-  #         memory: 500M
-  #       reservations:
-  #         cpus: '0.25'
-  #         memory: 100M
-  #   container_name: node-exporter
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: wget --quiet --tries=1 --spider http://localhost:9100
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 5
-  #   volumes:
-  #     - /proc:/host/proc:ro
-  #     - /sys:/host/sys:ro
-  #     - /:/rootfs:ro
-  #   command:
-  #     - '--path.procfs=/host/proc'
-  #     - '--path.rootfs=/rootfs'
-  #     - '--path.sysfs=/host/sys'
-  #     - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-  #   ports:
-  #     - 9100:9100
-  #   labels:
-  #     org.label-schema.group: "monitoring"
