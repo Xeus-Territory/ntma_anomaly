@@ -1,33 +1,28 @@
 # NTMA_Anomaly
-Network Traffic Monitor and Analysis on Anomally for Scale Infra
----
+# Network Traffic Monitor and Analysis on anomaly detection for scaling infrastructure
 
-Code structure: <br>
-- [Application]:
-    - app: content anything to bringup the TODO app
-    - docker-compose.yaml: file to interact with app and install app into container
-- [Infrastructure]:
-    - backup: backup everything log files **Deprecated Current**
-    - design: XML documentation for draw.io to watching the design about infrastructure of system on Local and Cloud
-    - docker: container anything related with docker
-        - conf: docker image configuration include for Webserver NGINX and Monitoring for Grafana and Prometheus
-        - log: contain logs information about the access and error on nginx
-        - docker-compose.yaml: compose file for deploy nginx webserver
-        - dockerfile.nginx: using for building webserver images
-        - monitoring-compose.yaml: compose file for deploy monitoring
-- [Script]:
-    - bot:
-        - demand_bot.py: using to interact with API and doing the benchmark for TODO APP
-    - webhook:
-        - Hook_Interact_Telegram : Using like webAPI - for listening trigger from module alert --> To Alert Notification for Telegram :coffee:
-    - worker:
-        - bash: shell script to run anything want setup to node Linux
-            - manage-swarm.sh: On progress for development
-            - setup-*.sh: shell script for setup one thing do you want base on name on file, Have 4 Option to choice [Create, Destroy, Up and Down] (except: advisor)
-        - python:
-            - log-process: Processing and convert log file into csv file for --> Data Module - On Progress Development
+*This repo is creature of by [@me](https://github.com/Xeus-Territory) and [@markpage2k1](https://github.com/MarkPage2k1). This is opensource, experimental and not have limited, so if you want contributed with me and mark, contact me.*
 
-Design Infrastructure: <br>
+## Purpose:
+- Purpose of project is about make the ideal about the HA (High Available) system combine DevOps with automation and AI for intelligence action
+- This way can be detected anomaly in network traffic by monitoring and analysis through log, metrics for deciding to make decision about automatic scaling by horizontal for demand anything work with low latency at least
+- Combine AI for anomaly detection can make the system can be flexible with data and can be dynamically scaled with flex metric not like using basic metrics or log.
+- Featured can be offer for detection DDos, Malware working in system. (Not now but feature this can be release)
+
+## Project structure: <br>
+- [Infrastructure](./Infrastructure/README.md):
+    - Anything about the infrastructure contain from Cloud, docker, system-design and other component to deploy 
+- [Script](./Script/README.md):
+    - Everything about the build, setup and deployment by Bash, Python and Golang
+- [ML-AI](./ML-AI/README.md)
+    - Contain the ML and AI project inside to anomaly detection and make decisions
+- Other:
+    - Script file for building the agent and deployment agent for orchestrating and automation system
+
+## Requirements of project
+- 2 VM or more (including cadvisor, az-cli, node-exporter, docker, ...). Don't worry, Everything i relate and even have the manual in repo
+
+## Design Infrastructure: v0.0.1 <br>
 **Local Infra** <br>
 ![Alt text](Infrastructure/design/LocalInfra.drawio.png) <br>
 **Cloud Infra** <br>
