@@ -6,7 +6,7 @@ networks:
 
 services:
   server:
-    image: nginx:1.23.4
+    image: xeusnguyen/nginx-1.23.4:modsecurity
     ports:
       - 80:80
     deploy:
@@ -27,6 +27,7 @@ services:
     volumes:
       - ./log/access.log:/var/log/nginx/access_server.log
       - ./log/error.log:/var/log/nginx/error_server.log
+      - ./log/modsec_audit.log:/var/log/nginx/modsec_audit.log
       - ./conf/nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./conf/nginx/nginx-default.conf:/etc/nginx/conf.d/default.conf
 

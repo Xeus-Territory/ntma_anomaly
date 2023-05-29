@@ -52,10 +52,48 @@ ENV NGINX_VERSION=1.23.4
 # # Copy the module mod-security compile for
 COPY --from=builder /tmp/nginx-${NGINX_VERSION}/objs/ngx_http_modsecurity_module.so /etc/nginx/modules
 
+# RUN mkdir -p /usr/local/modsecurity
+
+COPY --from=builder /usr/local/modsecurity /usr/local/modsecurity
+
+# # Create a directory for including the modules ModSecurity
+RUN mkdir /etc/nginx/modsec
+
+# # Copy the init for mod-security module
+COPY --from=builder /tmp/ModSecurity/unicode.mapping /etc/nginx/modsec
+COPY --from=builder /tmp/ModSecurity/modsecurity.conf-recommended etc/nginx/modsec/modsecurity.conf
+
 # # The Module is not valid for nginx-version - outdate and deprecation - 
 # # should using 1.11.0 version like Makefile https://github.com/cubicdaiya/ngx_dynamic_upstream
 # COPY --from=builder /tmp/nginx-${NGINX_VERSION}/objs/ngx_dynamic_upstream_module.so /etc/nginx/modules
 
-COPY conf/nginx/nginx.conf /etc/nginx/nginx.conf
+# # Install package dependecy
+RUN apt update && \
+    apt install -y \
+    build-essential curl git \
+    libpcre++-dev zlib1g-dev \
+    libtool autoconf \
+    libssl-dev libxml2-dev \
+    libgeoip-dev liblmdb-dev \
+    libyajl-dev libcurl4-openssl-dev \
+    libpcre3-dev pkgconf libxslt1-dev \
+    libgd-dev automake
 
-COPY conf/nginx/nginx-default.conf /etc/nginx/conf.d/default.conf
+
+# Install OWASP CRS from github
+RUN curl -L  https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.2.0.tar.gz -o /tmp/mod-security.tar.gz && \
+    tar -xzf /tmp/mod-security.tar.gz -C /tmp/ && \
+    mkdir -p /etc/nginx/modsec/owasp-modsecurity-crs && \
+    mv /tmp/owasp-modsecurity-crs-3.2.0 /etc/nginx/modsec/owasp-modsecurity-crs && \
+    mv /etc/nginx/modsec/owasp-modsecurity-crs/owasp-modsecurity-crs-3.2.0/crs-setup.conf.example \
+       /etc/nginx/modsec/owasp-modsecurity-crs/owasp-modsecurity-crs-3.2.0/crs-setup.conf && \
+    mv /etc/nginx/modsec/owasp-modsecurity-crs/owasp-modsecurity-crs-3.2.0/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example \
+       /etc/nginx/modsec/owasp-modsecurity-crs/owasp-modsecurity-crs-3.2.0/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf
+
+COPY conf/nginx/modsecurity.conf /etc/nginx/modsec
+
+COPY conf/nginx/main.conf /etc/nginx/modsec
+
+# COPY conf/nginx/nginx.conf /etc/nginx/nginx.conf
+
+# COPY conf/nginx/nginx-default.conf /etc/nginx/conf.d/default.conf
