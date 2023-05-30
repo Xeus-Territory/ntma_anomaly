@@ -202,7 +202,8 @@ def interact_todo(method = ['GET'] ,location_uri = "localhost", port = "80",  pr
     return results_interact, set_timeout
             
 def benchmark_todo(location_uri = "localhost", port = "80",  protocol = "http", 
-                   dir_point = "/items", set_timeout=5, worker=10, number_requests=1000):
+                   dir_point = "/items", set_timeout=5, worker=10, number_requests=1000, 
+                   method="GET", data_template = {"name":"HelloWorld!!!"}):
     """
     Doing a benchmark with a ab (Apache Benchmark) tools
 
@@ -214,14 +215,34 @@ def benchmark_todo(location_uri = "localhost", port = "80",  protocol = "http",
         set_timeout (int, optional): Time out ab set to benchmark. Defaults to 5.
         worker (int, optional): Number of worker to do the job request. Defaults to 10.
         number_requests (int, optional): Number of request. Defaults to 1000.
+        method (string,optional): Type of request method to making by bot. Default method "GET"
+        data_template (dict, optional): Data template to use for method post. Defaults to {"name":"HelloWorld!!!"}
     """
-    if set_timeout == 0:
-        os.system("ab" + " -n " + str(number_requests) + " -c " + str(worker) + " " 
-                  + protocol + "://" + location_uri + ":" + port + dir_point + " || exit 1")
-    
-    else:
-        os.system("ab" + " -n " + str(number_requests) + " -c " + str(worker) + " -t " + str(set_timeout) 
-                  + " " + protocol + "://" + location_uri + ":" + port + dir_point + " || exit 1")
+    type_value_dict_key = [type(data_template[key]).__name__ for key in list(data_template.keys())]
+    dict_key = list(data_template.keys())
+    if method == "GET":
+        if set_timeout == 0:
+            os.system("ab" + " -n " + str(number_requests) + " -c " + str(worker) + " " 
+                    + protocol + "://" + location_uri + ":" + port + dir_point + " || exit 1")
+        
+        else:
+            os.system("ab" + " -n " + str(number_requests) + " -c " + str(worker) + " -t " + str(set_timeout) 
+                    + " " + protocol + "://" + location_uri + ":" + port + dir_point + " || exit 1")
+    if method == "POST":
+        value_generate = [generate_random_todo(x) for x in type_value_dict_key]
+        dict_generate = {dict_key[i]:value_generate[i] for i in range(len(dict_key))}
+        with open('postdata.json', 'w+') as json_file:
+            json_file.write(json.dumps(dict_generate))
+            json_file.close()
+        if set_timeout == 0:
+            os.system("ab" + " -n " + str(number_requests) + " -c " + str(worker) + " "
+                    + "-p " + "postdata.json" + " -T " + " 'application/json'" + " "
+                    + " " + protocol + "://" + location_uri + ":" + port + dir_point + " || exit 1")
+        else:
+            os.system("ab" + " -n " + str(number_requests) + " -c " + str(worker) + " -t " + str(set_timeout) 
+                    + " "+ "-p " + "postdata.json" + " -T " + " 'application/json'" + " "
+                    + " " + protocol + "://" + location_uri + ":" + port + dir_point + " || exit 1")
+        
 
 
 def __main__():
@@ -262,11 +283,19 @@ def __main__():
               "\t- Total 4xx Response: " + str(results_interact["4xx Response"]) + "\n" +
               "\t- Total 5xx Response: " + str(results_interact["5xx Response"]) + "\n")
     if opt.type == "benchmark":
+        method = [str(m) for m in opt.method]
+        template = opt.data_templates
         if len(directory) != 1:
             print("Multiple directories not supported for benchmark version, please specify the directory")
         if len(directory) == 1:
-            benchmark_todo(location_uri=location_uri, port=port, protocol=protocol, dir_point=directory[0], 
-                           set_timeout=timeout, worker=opt.workers, number_requests=opt.number_requests) 
+            if len(method) != 1:
+                print("Just one method is GET or POST is supported for benchmark")
+            else:
+                if method[0] == "PUT" or method[0] == "DELETE":
+                    print("Just one method is GET or POST is supported for benchmark")
+                else:
+                    benchmark_todo(location_uri=location_uri, port=port, protocol=protocol, dir_point=directory[0], 
+                                set_timeout=timeout, worker=opt.workers, number_requests=opt.number_requests, method=method[0], data_template=template) 
         
 if __name__=='__main__':
     __main__()
