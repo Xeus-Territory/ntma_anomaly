@@ -100,6 +100,14 @@ def sd_nginx(list_ip):
 server{
     listen 80 default_server;
     server_name _;
+    modsecurity on;
+    modsecurity_rules_file /etc/nginx/modsec/main.conf;
+
+    location ~ "\/items\/([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})" {
+        modsecurity off;
+        proxy_pass http://todo_app;
+    }
+    
     location / {
         proxy_pass http://todo_app;
     }
