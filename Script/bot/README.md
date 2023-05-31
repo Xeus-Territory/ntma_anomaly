@@ -35,7 +35,7 @@
 >
 > valid options: -p 80, --port 8080
 
-### 5. Method of request (Can be one or multiple)
+### 5. Method of request (Can be one or multiple for interact but just one GET or POST request for benchmark)
 >
 > **-m or --method: Method of request want to do**
 >
@@ -59,7 +59,7 @@
 >
 > valid options: -s 30, --sleep 5. Should be less than timeout but now it work if more (LOL that is bug)
 
-### 9. Data template for Post requests (valid for interact mode only)
+### 9. Data template for Post requests (valid for both interact and benchmark)
 >
 > **-D or --data_templates: Data template for post requests. Default {"name":"HelloWorld!!!"}. Work with dictionary type**
 >

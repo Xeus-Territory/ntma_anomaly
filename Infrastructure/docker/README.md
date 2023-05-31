@@ -27,6 +27,7 @@
 - Applied SD for dynamic update system configuration and make anything became automatically
 - Using Grafana env for visualization and prometheus to monitoring the metrics on system
 - All in one for doing the message queues for convert metric into message and store into redis via kafka and kafka stream for use data into next step about model AI
+- Preventing the webattack threading from modsecurity installed into NGINX
 
 ## Port will be opened to access into: 
 - 80  : Application
