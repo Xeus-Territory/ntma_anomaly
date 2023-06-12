@@ -6,6 +6,8 @@ import time
 import random
 import os
 import datetime
+import schedule
+from concurrent.futures import ThreadPoolExecutor
 
 def generate_random_todo(type):
     """
@@ -243,12 +245,37 @@ def benchmark_todo(location_uri = "localhost", port = "80",  protocol = "http",
                     + " "+ "-p " + "postdata.json" + " -T " + " 'application/json'" + " "
                     + " " + protocol + "://" + location_uri + ":" + port + dir_point + " || exit 1")
         
+def random_schedule(choice, location_uri = "localhost", port = "80", protocol = "http", 
+                    dir_point = "/items", data_template = {"name":"HelloWorld!!!"}):
+    """random task by schedule code by pick one on benchmark or interact
 
+    Args:
+        choice (string, optional): The option want to make a job doing
+        location_uri (str, optional): Location where you the web you want to interact. Defaults to "localhost".
+        port (str, optional): Port of website you want interact with. Defaults to "80".
+        protocol (str, optional): web_protocol to make a interact. Defaults to "http".
+        dir_point (str, optional): Directory point you want to interact. Defaults to "/items".
+        data_template (dict, optional): Default template data will send for method POST or PUT. Defaults to {"name":"HelloWorld!!!"}.
+    """    
+    if choice == 'interact':
+        sleep_timeout = random.randint(1, 5)
+        method = ['GET', 'POST', 'PUT', 'DELETE']
+        set_timeout = random.randint(60,150)
+        number_threading = random.randint(10,50)
+        executor = ThreadPoolExecutor(max_workers=number_threading)
+        executor.submit(interact_todo, method, location_uri, port, protocol, dir_point, data_template, set_timeout, sleep_timeout)
+    if choice == 'benchmark':
+        worker = random.randint(50,200)
+        method = random.choice(['GET', 'POST'])
+        number_requests = random.randint(10000,30000)
+        benchmark_todo(location_uri=location_uri, port=port, protocol=protocol, dir_point=dir_point[0], 
+                    set_timeout=0, worker=worker, number_requests=number_requests, method=method, data_template=data_template)
 
 def __main__():
     """Main function to interact with another function created above
-    """    
-    TYPE = ['interact', 'benchmark']
+    """
+    global random_interact, random_benchmark    
+    TYPE = ['interact', 'benchmark', 'random']
     parser = argparse.ArgumentParser(description="Bot for request to web with purpose do [Interact or Benchmark]")
     parser.add_argument('-T', '--type', help='purpose of type for doing with bot', choices=TYPE, required=True)
     parser.add_argument('-P', '--protocol', help='protocol of request', default="http")
@@ -295,7 +322,19 @@ def __main__():
                     print("Just one method is GET or POST is supported for benchmark")
                 else:
                     benchmark_todo(location_uri=location_uri, port=port, protocol=protocol, dir_point=directory[0], 
-                                set_timeout=timeout, worker=opt.workers, number_requests=opt.number_requests, method=method[0], data_template=template) 
+                                set_timeout=timeout, worker=opt.workers, number_requests=opt.number_requests, method=method[0], data_template=template)
+                    
+    if opt.type == "random":
+        template = opt.data_templates
+        schedule.every(1).to(10).seconds.do(random_schedule, choice="interact", location_uri=location_uri, port=port, protocol=protocol, dir_point=directory, data_template=template)
+        schedule.every(2).to(10).hours.do(random_schedule, choice="benchmark", location_uri=location_uri, port=port, protocol=protocol, dir_point=directory, data_template=template)
+        while True:
+            try:
+                schedule.run_pending()
+                time.sleep(1)
+            except Exception as e:
+                print(e)
+                break                
         
 if __name__=='__main__':
     __main__()
