@@ -45,12 +45,44 @@ RUN git clone https://github.com/SpiderLabs/ModSecurity-nginx /tmp/ModSecurity-n
 #     ./configure --add-dynamic-module=/tmp/ngx_dynamic_upstream && \
 #     make modules
 
+# Download and configuration build module for lua-nginx-module (All modules below will be required for this step)
+RUN curl -L https://luajit.org/download/LuaJIT-2.0.5.tar.gz -o /tmp/LuaJIT-2.0.5.tar.gz && \
+    curl -L https://github.com/vision5/ngx_devel_kit/archive/refs/tags/v0.3.2.tar.gz -o /tmp/ngx_devel_kit-v0.3.2.tar.gz && \
+    curl -L https://github.com/openresty/lua-nginx-module/archive/refs/tags/v0.10.24.tar.gz -o /tmp/lua-nginx-module-v0.10.24.tar.gz && \
+    curl -L https://github.com/openresty/stream-lua-nginx-module/archive/refs/tags/v0.0.13.tar.gz -o /tmp/stream-lua-nginx-module-v0.0.13.tar.gz && \
+    tar -xzf /tmp/LuaJIT-2.0.5.tar.gz --directory /tmp/ && \
+    tar -xzf /tmp/ngx_devel_kit-v0.3.2.tar.gz --directory /tmp && \
+    tar -xzf /tmp/lua-nginx-module-v0.10.24.tar.gz --directory /tmp && \
+    tar -xzf /tmp/stream-lua-nginx-module-v0.0.13.tar.gz --directory /tmp
+
+# Compile the LUAJIT module
+RUN cd /tmp/LuaJIT-2.0.5 && \
+    make install
+
+# Compile NGINX with LUAJIT to build ndk (nginx-development-kit) and lua-nginx-module
+RUN cd /tmp/nginx-${NGINX_VERSION} && \
+    export LUAJIT_LIB=/usr/local/lib && \
+    export LUAJIT_INC=/usr/local/include/luajit-2.0 && \
+    ./configure --with-compat --with-stream --with-openssl=/usr/include/openssl/ --add-dynamic-module=/tmp/ngx_devel_kit-0.3.2 \
+    --with-pcre --with-ld-opt='-lpcre' --add-dynamic-module=/tmp/lua-nginx-module-0.10.24 --add-dynamic-module=/tmp/stream-lua-nginx-module-0.0.13 && \
+    make modules && \
+    rm -rf Makefile /objs/Makefile
+
 FROM nginx:1.23.4
 
 ENV NGINX_VERSION=1.23.4
 
 # # Copy the module mod-security compile for
 COPY --from=builder /tmp/nginx-${NGINX_VERSION}/objs/ngx_http_modsecurity_module.so /etc/nginx/modules
+
+# Copy the module include for lua-nginx-module
+COPY --from=builder /tmp/nginx-${NGINX_VERSION}/objs/ndk_http_module.so /etc/nginx/modules
+COPY --from=builder /tmp/nginx-${NGINX_VERSION}/objs/ngx_http_lua_module.so /etc/nginx/modules
+COPY --from=builder /tmp/nginx-${NGINX_VERSION}/objs/ngx_stream_lua_module.so /etc/nginx/modules
+
+COPY --from=builder /usr/local/include/luajit-2.0 /usr/local/include/luajit-2.0
+COPY --from=builder /usr/local/bin  /usr/local/bin
+COPY --from=builder /usr/local/lib  /usr/local/lib
 
 # RUN mkdir -p /usr/local/modsecurity
 
@@ -93,6 +125,8 @@ RUN curl -L  https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.2.0.
 COPY conf/nginx/modsecurity.conf /etc/nginx/modsec
 
 COPY conf/nginx/main.conf /etc/nginx/modsec
+
+ENV LD_LIBRARY_PATH=/usr/local/lib
 
 # COPY conf/nginx/nginx.conf /etc/nginx/nginx.conf
 
