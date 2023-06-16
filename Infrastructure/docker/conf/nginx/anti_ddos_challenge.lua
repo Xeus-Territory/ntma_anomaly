@@ -2519,7 +2519,7 @@ else --it is to be dynamic
 end
 
 --shuffle table function
-function shuffle(tbl)
+local function shuffle(tbl)
 	local tbl_length = #tbl
 	for i = tbl_length, 2, -1 do
 		local j = math.random(i)

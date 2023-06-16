@@ -3,6 +3,12 @@ FROM debian:bullseye-slim AS builder
 
 # Configuration NGINX-Version to Environment
 ENV NGINX_VERSION=1.23.4
+ENV LUAJIT2_VERSION=2.1-20230410
+ENV NGINX_DEV_KIT_VERSION=0.3.2
+ENV LUA_NGINX_MODULE_VERSION=0.10.24
+ENV STREAM_LUA_NGINX_MODULE_VERSION=0.0.13
+ENV LUA_RESTY_CORE_VERSION=0.1.26
+ENV LUA_RESTY_LRUCACHE_VERSION=0.13
 
 # Update requirements package for os
 RUN apt update && \
@@ -45,53 +51,69 @@ RUN git clone https://github.com/SpiderLabs/ModSecurity-nginx /tmp/ModSecurity-n
 #     ./configure --add-dynamic-module=/tmp/ngx_dynamic_upstream && \
 #     make modules
 
-# Download and configuration build module for lua-nginx-module (All modules below will be required for this step)
-RUN curl -L https://luajit.org/download/LuaJIT-2.0.5.tar.gz -o /tmp/LuaJIT-2.0.5.tar.gz && \
-    curl -L https://github.com/vision5/ngx_devel_kit/archive/refs/tags/v0.3.2.tar.gz -o /tmp/ngx_devel_kit-v0.3.2.tar.gz && \
-    curl -L https://github.com/openresty/lua-nginx-module/archive/refs/tags/v0.10.24.tar.gz -o /tmp/lua-nginx-module-v0.10.24.tar.gz && \
-    curl -L https://github.com/openresty/stream-lua-nginx-module/archive/refs/tags/v0.0.13.tar.gz -o /tmp/stream-lua-nginx-module-v0.0.13.tar.gz && \
-    tar -xzf /tmp/LuaJIT-2.0.5.tar.gz --directory /tmp/ && \
-    tar -xzf /tmp/ngx_devel_kit-v0.3.2.tar.gz --directory /tmp && \
-    tar -xzf /tmp/lua-nginx-module-v0.10.24.tar.gz --directory /tmp && \
-    tar -xzf /tmp/stream-lua-nginx-module-v0.0.13.tar.gz --directory /tmp
+# Download and configuration build module for lua-nginx-module (All modules below will be required for this step) 
+# Change the version of nginx can be make available - refer: @https://github.com/openresty/lua-nginx-module#nginx-compatibility
+# for more infomation - require 1.19.x or may be install dynamic module with suitable version 
+RUN curl -L https://github.com/openresty/luajit2/archive/v${LUAJIT2_VERSION}.tar.gz -o /tmp/luajit2-v${LUAJIT2_VERSION}.tar.gz && \
+    curl -L https://github.com/simplresty/ngx_devel_kit/archive/v${NGINX_DEV_KIT_VERSION}.tar.gz -o /tmp/ngx_devel_kit-v${NGINX_DEV_KIT_VERSION}.tar.gz  && \
+    curl -L https://github.com/openresty/lua-nginx-module/archive/v${LUA_NGINX_MODULE_VERSION}.tar.gz -o /tmp/lua-nginx-module-v${LUA_NGINX_MODULE_VERSION}.tar.gz && \
+    curl -L https://github.com/openresty/stream-lua-nginx-module/archive/refs/tags/v${STREAM_LUA_NGINX_MODULE_VERSION}.tar.gz -o /tmp/stream-lua-nginx-module-v${STREAM_LUA_NGINX_MODULE_VERSION}.tar.gz && \
+    curl -L https://github.com/openresty/lua-resty-core/archive/v${LUA_RESTY_CORE_VERSION}.tar.gz -o /tmp/lua-resty-core-v${LUA_RESTY_CORE_VERSION}.tar.gz && \
+    curl -L https://github.com/openresty/lua-resty-lrucache/archive/v${LUA_RESTY_LRUCACHE_VERSION}.tar.gz -o /tmp/lua-resty-lrucache-v${LUA_RESTY_LRUCACHE_VERSION}.tar.gz && \
+    tar -xzf /tmp/luajit2-v${LUAJIT2_VERSION}.tar.gz --directory /tmp/ && \
+    tar -xzf /tmp/ngx_devel_kit-v${NGINX_DEV_KIT_VERSION}.tar.gz --directory /tmp && \
+    tar -xzf /tmp/lua-nginx-module-v${LUA_NGINX_MODULE_VERSION}.tar.gz --directory /tmp && \
+    tar -xzf /tmp/stream-lua-nginx-module-v${STREAM_LUA_NGINX_MODULE_VERSION}.tar.gz --directory /tmp && \
+    tar -xzf /tmp/lua-resty-core-v${LUA_RESTY_CORE_VERSION}.tar.gz --directory /tmp && \
+    tar -xzf /tmp/lua-resty-lrucache-v${LUA_RESTY_LRUCACHE_VERSION}.tar.gz --directory /tmp
 
 # Compile the LUAJIT module
-RUN cd /tmp/LuaJIT-2.0.5 && \
+RUN cd /tmp/luajit2-${LUAJIT2_VERSION} && \
+    make && make install
+
+# Export the location of LUAJIT LIB
+ENV LUAJIT_LIB=/usr/local/lib
+ENV LUAJIT_INC=/usr/local/include/luajit-2.1
+
+# Install require package include
+RUN cd /tmp/lua-resty-core-${LUA_RESTY_CORE_VERSION} && \
+    make install
+
+RUN cd /tmp/lua-resty-lrucache-${LUA_RESTY_LRUCACHE_VERSION} && \
     make install
 
 # Compile NGINX with LUAJIT to build ndk (nginx-development-kit) and lua-nginx-module
 RUN cd /tmp/nginx-${NGINX_VERSION} && \
-    export LUAJIT_LIB=/usr/local/lib && \
-    export LUAJIT_INC=/usr/local/include/luajit-2.0 && \
-    ./configure --with-compat --with-stream --with-openssl=/usr/include/openssl/ --add-dynamic-module=/tmp/ngx_devel_kit-0.3.2 \
-    --with-pcre --with-ld-opt='-lpcre' --add-dynamic-module=/tmp/lua-nginx-module-0.10.24 --add-dynamic-module=/tmp/stream-lua-nginx-module-0.0.13 && \
+    ./configure --with-compat --with-stream --with-openssl=/usr/include/openssl/ --with-ld-opt="-Wl,-rpath,/usr/local/lib" --with-pcre --with-ld-opt='-lpcre' \
+    --add-dynamic-module=/tmp/ngx_devel_kit-${NGINX_DEV_KIT_VERSION} --add-dynamic-module=/tmp/lua-nginx-module-${LUA_NGINX_MODULE_VERSION} \
+    --add-dynamic-module=/tmp/stream-lua-nginx-module-${STREAM_LUA_NGINX_MODULE_VERSION} && \
     make modules && \
     rm -rf Makefile /objs/Makefile
 
 FROM nginx:1.23.4
 
+ENV LD_LIBRARY_PATH=/usr/local/lib
 ENV NGINX_VERSION=1.23.4
 
-# # Copy the module mod-security compile for
+# Copy the module mod-security compile for
 COPY --from=builder /tmp/nginx-${NGINX_VERSION}/objs/ngx_http_modsecurity_module.so /etc/nginx/modules
 
-# Copy the module include for lua-nginx-module
+# Copy the module include for lua-nginx-module, component relative to the module fron builder into nginx
 COPY --from=builder /tmp/nginx-${NGINX_VERSION}/objs/ndk_http_module.so /etc/nginx/modules
 COPY --from=builder /tmp/nginx-${NGINX_VERSION}/objs/ngx_http_lua_module.so /etc/nginx/modules
 COPY --from=builder /tmp/nginx-${NGINX_VERSION}/objs/ngx_stream_lua_module.so /etc/nginx/modules
-
-COPY --from=builder /usr/local/include/luajit-2.0 /usr/local/include/luajit-2.0
+COPY --from=builder /usr/local/include/luajit-2.1 /usr/local/include/luajit-2.1
 COPY --from=builder /usr/local/bin  /usr/local/bin
 COPY --from=builder /usr/local/lib  /usr/local/lib
 
+# COPY the module modsecurity from builder into nginx 
 # RUN mkdir -p /usr/local/modsecurity
-
 COPY --from=builder /usr/local/modsecurity /usr/local/modsecurity
 
-# # Create a directory for including the modules ModSecurity
+# Create a directory for including the modules ModSecurity
 RUN mkdir /etc/nginx/modsec
 
-# # Copy the init for mod-security module
+# Copy the init for mod-security module
 COPY --from=builder /tmp/ModSecurity/unicode.mapping /etc/nginx/modsec
 COPY --from=builder /tmp/ModSecurity/modsecurity.conf-recommended etc/nginx/modsec/modsecurity.conf
 
@@ -99,7 +121,7 @@ COPY --from=builder /tmp/ModSecurity/modsecurity.conf-recommended etc/nginx/mods
 # # should using 1.11.0 version like Makefile https://github.com/cubicdaiya/ngx_dynamic_upstream
 # COPY --from=builder /tmp/nginx-${NGINX_VERSION}/objs/ngx_dynamic_upstream_module.so /etc/nginx/modules
 
-# # Install package dependecy
+# Install package dependecy
 RUN apt update && \
     apt install -y \
     build-essential curl git \
@@ -122,11 +144,11 @@ RUN curl -L  https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.2.0.
     mv /etc/nginx/modsec/owasp-modsecurity-crs/owasp-modsecurity-crs-3.2.0/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example \
        /etc/nginx/modsec/owasp-modsecurity-crs/owasp-modsecurity-crs-3.2.0/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf
 
+# COPY an external file into nginx via binding mod for setup modsecurity
+
 COPY conf/nginx/modsecurity.conf /etc/nginx/modsec
 
 COPY conf/nginx/main.conf /etc/nginx/modsec
-
-ENV LD_LIBRARY_PATH=/usr/local/lib
 
 # COPY conf/nginx/nginx.conf /etc/nginx/nginx.conf
 
