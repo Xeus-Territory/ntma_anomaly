@@ -36,6 +36,11 @@ EOF
 # Create the image and build the container for swarm visualization
 if [[ "$1" == "create" ]]; then
     clone_visuallizer
+    if [ -z "$(docker network ls | grep monitoring)" ]; then
+        docker network create --driver bridge --subnet=172.30.0.0/16 --gateway=172.30.0.1 --scope=local monitoring
+    else
+        echo "The monitoring network really exist"
+    fi
     { 
         docker-compose -f docker-swarm-visualizer/docker-compose.yml up -d 
     } || { 

@@ -91,11 +91,11 @@ if [[ "$1" == "gen" ]]; then
 # Generate the configuration file and create monitoring group
 elif [[ "$1" == "gen-create" ]]; then
   generate_conf "$2" "$3" "$4"
-  {
+  if [ -z "$(docker network ls | grep monitoring)" ]; then
     docker network create --driver bridge --subnet=172.30.0.0/16 --gateway=172.30.0.1 --scope=local monitoring
-  } || {
-    echo "Error when generating network" && exit 1
-  }
+  else
+    echo "The monitoring network really exist"
+  fi
   {
     docker-compose -f "$abs_path_infrastructure/monitoring-compose.yaml" up -d
   } || {
@@ -106,11 +106,11 @@ elif [[ "$1" == "gen-create" ]]; then
 
 # Not need to generate a new config, just create monitoring group
 elif [[ "$1" == "create" ]]; then
-  {
+  if [ -z "$(docker network ls | grep monitoring)" ]; then
     docker network create --driver bridge --subnet=172.30.0.0/16 --gateway=172.30.0.1 --scope=local monitoring
-  } || {
-    echo "Error when generating network" && exit 1
-  }
+  else
+    echo "The monitoring network really exist"
+  fi
   {
     docker-compose -f "$abs_path_infrastructure/monitoring-compose.yaml" up -d
   } || {
