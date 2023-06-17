@@ -1,0 +1,130 @@
+version: '3'
+
+volumes:
+  redis_data: {}
+
+services:
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    deploy:
+      resources:
+        limits:
+          cpus: '0.70'
+          memory: 700M
+        reservations:
+          cpus: '0.50'
+          memory: 500M
+    restart: unless-stopped
+    healthcheck:
+      test: nc -z localhost 9092 || exit -1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    environment:
+      KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_LOG_RETENTION_HOURS: "168"
+      KAFKA_LOG_RETENTION_BYTES: "100000000"
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ZOOKEEPER_CONNECT:  zookeeper:2181
+      KAFKA_CREATE_TOPICS: "log"
+    depends_on:
+      - zookeeper
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 200M
+        reservations:
+          cpus: '0.25'
+          memory: 100M
+    restart: unless-stopped
+    healthcheck:
+      test: nc -z localhost 2181 || exit -1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.8.0
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 500M
+        reservations:
+          cpus: '0.25'
+          memory: 100M
+    restart: unless-stopped
+    volumes:
+      - "./conf/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml"
+      - "./log:/nginx-logs"
+    depends_on:
+      - kafka
+
+  redis:
+    image: redis:alpine3.17
+    container_name: redis
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 200M
+        reservations:
+          cpus: '0.25'
+          memory: 100M
+    restart: unless-stopped
+    healthcheck:
+      test: nc -z localhost 6379 || exit -1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    # volumes:
+    #   - redis_data:/data
+  
+  metrics-redis:
+    container_name: metrics-redis
+    image: markpage2k1/metrics-redis:v1.0.0
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 200M
+        reservations:
+          cpus: '0.25'
+          memory: 100M
+    restart: unless-stopped
+    environment:
+      PROMETHEUS_HOSTNAME: 192.168.56.131
+      PROMETHEUS_PORT: 9090
+      REDIS_HOSTNAME: redis
+      REDIS_PORT: 6379
+      KAFKA_HOSTNAME: kafka
+      KAFKA_PORT: 9092
+      KAFKA_TOPIC: log
+    depends_on:
+      - kafka
+      - redis
+      
+  metrics-csv:
+    container_name: metrics-csv
+    image: markpage2k1/metrics-csv:v1.0.0
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 200M
+        reservations:
+          cpus: '0.25'
+          memory: 100M
+    volumes:
+      - ./log_data:/log_data
+    environment:
+      REDIS_HOSTNAME: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - redis

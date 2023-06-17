@@ -4,6 +4,7 @@ import os
 import json
 import subprocess
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
 NAME_MANAGER=os.getenv('NAME_MANAGER')
@@ -119,14 +120,17 @@ server{
         allow 172.21.0.0/16;
         deny all;
     }  
-}'''
+}
+
+include /etc/nginx/waf/ddos.conf;'''
             conf_file = open("../../../Infrastructure/docker/conf/nginx/nginx-default.conf", "r+")
             conf_file.truncate()
             conf_file.write(template)
             conf_file.close()
         else:
             os.system('cp -rf bak/nginx-default.conf.bak ../../../Infrastructure/docker/conf/nginx/nginx-default.conf')
-        cmd_exec = "docker exec -it " + out.decode("utf-8").replace('\n','') + " service nginx reload > /dev/null"
+        time.sleep(30)
+        cmd_exec = "docker exec " + out.decode("utf-8").replace('\n','') + " service nginx reload > /dev/null"
         os.system(cmd_exec)
     except Exception as e:
         print("Error occurred while running -->" + str(e))

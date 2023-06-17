@@ -24,13 +24,13 @@ services:
     networks:
       - application
   app:
-    image: application:v0.0.1
+    image: xeusnguyen/application:v0.0.1
     command: sh -c "yarn run dev"
     deploy:
       resources:
         limits:
           cpus: '0.1'
-          memory: 100M
+          memory: 120M
       replicas: 2
       placement:
         constraints:

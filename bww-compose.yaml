@@ -6,7 +6,7 @@ networks:
 
 services:
   manager:
-    image: agent-script:v0.0.1
+    image: xeusnguyen/agent-script:v0.0.1
     working_dir: /app/NTMA_Anomaly/Script/worker/python
     deploy:
       resources:
@@ -38,7 +38,7 @@ services:
       - wkernet
 
   slave:
-    image: agent-script:v0.0.1
+    image: xeusnguyen/agent-script:v0.0.1
     working_dir: /app/NTMA_Anomaly/Script/worker/python
     deploy:
       resources:
@@ -64,7 +64,7 @@ services:
       - wkernet
   
   hook:
-    image: agent-script:v0.0.1
+    image: xeusnguyen/agent-script:v0.0.1
     working_dir: /app/NTMA_Anomaly/Script/webhook
     deploy:
       resources:
