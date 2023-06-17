@@ -4,11 +4,12 @@ FROM debian:bullseye-slim AS builder
 # Configuration NGINX-Version to Environment
 ENV NGINX_VERSION=1.23.4
 ENV LUAJIT2_VERSION=2.1-20230410
-ENV NGINX_DEV_KIT_VERSION=0.3.2
+ENV NGINX_DEV_KIT_VERSION=0.3.1
 ENV LUA_NGINX_MODULE_VERSION=0.10.24
 ENV STREAM_LUA_NGINX_MODULE_VERSION=0.0.13
 ENV LUA_RESTY_CORE_VERSION=0.1.26
 ENV LUA_RESTY_LRUCACHE_VERSION=0.13
+ENV LUA_RESTY_HMAC_VERSION=0.06-1
 
 # Update requirements package for os
 RUN apt update && \
@@ -60,12 +61,14 @@ RUN curl -L https://github.com/openresty/luajit2/archive/v${LUAJIT2_VERSION}.tar
     curl -L https://github.com/openresty/stream-lua-nginx-module/archive/refs/tags/v${STREAM_LUA_NGINX_MODULE_VERSION}.tar.gz -o /tmp/stream-lua-nginx-module-v${STREAM_LUA_NGINX_MODULE_VERSION}.tar.gz && \
     curl -L https://github.com/openresty/lua-resty-core/archive/v${LUA_RESTY_CORE_VERSION}.tar.gz -o /tmp/lua-resty-core-v${LUA_RESTY_CORE_VERSION}.tar.gz && \
     curl -L https://github.com/openresty/lua-resty-lrucache/archive/v${LUA_RESTY_LRUCACHE_VERSION}.tar.gz -o /tmp/lua-resty-lrucache-v${LUA_RESTY_LRUCACHE_VERSION}.tar.gz && \
+    curl -L https://github.com/jkeys089/lua-resty-hmac/archive/refs/tags/${LUA_RESTY_HMAC_VERSION}.tar.gz -o /tmp/lua-resty-hmac-${LUA_RESTY_HMAC_VERSION}.tar.gz && \
     tar -xzf /tmp/luajit2-v${LUAJIT2_VERSION}.tar.gz --directory /tmp/ && \
     tar -xzf /tmp/ngx_devel_kit-v${NGINX_DEV_KIT_VERSION}.tar.gz --directory /tmp && \
     tar -xzf /tmp/lua-nginx-module-v${LUA_NGINX_MODULE_VERSION}.tar.gz --directory /tmp && \
     tar -xzf /tmp/stream-lua-nginx-module-v${STREAM_LUA_NGINX_MODULE_VERSION}.tar.gz --directory /tmp && \
     tar -xzf /tmp/lua-resty-core-v${LUA_RESTY_CORE_VERSION}.tar.gz --directory /tmp && \
-    tar -xzf /tmp/lua-resty-lrucache-v${LUA_RESTY_LRUCACHE_VERSION}.tar.gz --directory /tmp
+    tar -xzf /tmp/lua-resty-lrucache-v${LUA_RESTY_LRUCACHE_VERSION}.tar.gz --directory /tmp && \
+    tar -xzf /tmp/lua-resty-hmac-${LUA_RESTY_HMAC_VERSION}.tar.gz --directory /tmp 
 
 # Compile the LUAJIT module
 RUN cd /tmp/luajit2-${LUAJIT2_VERSION} && \
@@ -82,6 +85,9 @@ RUN cd /tmp/lua-resty-core-${LUA_RESTY_CORE_VERSION} && \
 RUN cd /tmp/lua-resty-lrucache-${LUA_RESTY_LRUCACHE_VERSION} && \
     make install
 
+RUN cd /tmp/lua-resty-hmac-${LUA_RESTY_HMAC_VERSION} && \
+    make install
+
 # Compile NGINX with LUAJIT to build ndk (nginx-development-kit) and lua-nginx-module
 RUN cd /tmp/nginx-${NGINX_VERSION} && \
     ./configure --with-compat --with-stream --with-openssl=/usr/include/openssl/ --with-ld-opt="-Wl,-rpath,/usr/local/lib" --with-pcre --with-ld-opt='-lpcre' \
@@ -93,6 +99,8 @@ RUN cd /tmp/nginx-${NGINX_VERSION} && \
 FROM nginx:1.23.4
 
 ENV LD_LIBRARY_PATH=/usr/local/lib
+ENV LUAJIT_LIB=/usr/local/lib
+ENV LUAJIT_INC=/usr/local/include/luajit-2.1
 ENV NGINX_VERSION=1.23.4
 
 # Copy the module mod-security compile for
@@ -105,6 +113,7 @@ COPY --from=builder /tmp/nginx-${NGINX_VERSION}/objs/ngx_stream_lua_module.so /e
 COPY --from=builder /usr/local/include/luajit-2.1 /usr/local/include/luajit-2.1
 COPY --from=builder /usr/local/bin  /usr/local/bin
 COPY --from=builder /usr/local/lib  /usr/local/lib
+COPY --from=builder /usr/local/openresty/lualib/resty /usr/local/lib/lua/resty/
 
 # COPY the module modsecurity from builder into nginx 
 # RUN mkdir -p /usr/local/modsecurity
@@ -131,7 +140,8 @@ RUN apt update && \
     libgeoip-dev liblmdb-dev \
     libyajl-dev libcurl4-openssl-dev \
     libpcre3-dev pkgconf libxslt1-dev \
-    libgd-dev automake
+    libgd-dev automake \
+    nano
 
 
 # Install OWASP CRS from github

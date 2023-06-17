@@ -2453,7 +2453,9 @@ math.randomseed(os.time())
 
 --function to encrypt strings with our secret key / password provided
 local function calculate_signature(str)
-	local output = ngx.encode_base64(ngx.hmac_sha1(secret, str))
+	local hmac = require "resty.hmac"
+	local hmac_sha1 = hmac:new(secret, hmac.ALGOS.SHA1)
+	local output = ngx.encode_base64(hmac_sha1:final(str,false))
 	output = ngx.re.gsub(output, "[+]", "-", ngx_re_options) --Replace + with -
 	output = ngx.re.gsub(output, "[/]", "_", ngx_re_options) --Replace / with _
 	output = ngx.re.gsub(output, "[=]", "", ngx_re_options) --Remove =
@@ -2991,12 +2993,12 @@ local function grant_access()
 			ngx.exit(ngx.HTTP_NO_CONTENT)
 		end
 		if req_headers[x_auth_header_name] == JavascriptPuzzleVars_answer then --if the answer header provided by the browser Javascript matches what our Javascript puzzle answer should be
-			set_cookie1 = challenge.."="..cookie_value.."; path=/; expires=" .. ngx.cookie_time(currenttime+expire_time) .. "; Max-Age=" .. expire_time .. ";" --apply our uid cookie incase javascript setting this cookies time stamp correctly has issues
-			set_cookie2 = cookie_name_start_date.."="..currenttime.."; path=/; expires=" .. ngx.cookie_time(currenttime+expire_time) .. "; Max-Age=" .. expire_time .. ";" --start date cookie
-			set_cookie3 = cookie_name_end_date.."="..(currenttime+expire_time).."; path=/; expires=" .. ngx.cookie_time(currenttime+expire_time) .. "; Max-Age=" .. expire_time .. ";" --end date cookie
-			set_cookie4 = cookie_name_encrypted_start_and_end_date.."="..calculate_signature(remote_addr .. currenttime .. (currenttime+expire_time) ).."; path=/; expires=" .. ngx.cookie_time(currenttime+expire_time) .. "; Max-Age=" .. expire_time .. ";" --start and end date combined to unique id
+			local set_cookie1 = challenge.."="..cookie_value.."; path=/; expires=" .. ngx.cookie_time(currenttime+expire_time) .. "; Max-Age=" .. expire_time .. ";" --apply our uid cookie incase javascript setting this cookies time stamp correctly has issues
+			local set_cookie2 = cookie_name_start_date.."="..currenttime.."; path=/; expires=" .. ngx.cookie_time(currenttime+expire_time) .. "; Max-Age=" .. expire_time .. ";" --start date cookie
+			local set_cookie3 = cookie_name_end_date.."="..(currenttime+expire_time).."; path=/; expires=" .. ngx.cookie_time(currenttime+expire_time) .. "; Max-Age=" .. expire_time .. ";" --end date cookie
+			local set_cookie4 = cookie_name_encrypted_start_and_end_date.."="..calculate_signature(remote_addr .. currenttime .. (currenttime+expire_time) ).."; path=/; expires=" .. ngx.cookie_time(currenttime+expire_time) .. "; Max-Age=" .. expire_time .. ";" --start and end date combined to unique id
 
-			set_cookies = {set_cookie1 , set_cookie2 , set_cookie3 , set_cookie4}
+			local set_cookies = {set_cookie1 , set_cookie2 , set_cookie3 , set_cookie4}
 			ngx.header["Set-Cookie"] = set_cookies
 			ngx.header["X-Content-Type-Options"] = "nosniff"
 			ngx.header["X-Frame-Options"] = "SAMEORIGIN"
@@ -3286,7 +3288,7 @@ local anti_ddos_html_output = [[
 --All previous checks failed and no access_granted permited so display authentication check page.
 --Output Anti-DDoS Authentication Page
 if set_cookies == nil then
-set_cookies = challenge.."="..answer.."; path=/; expires=" .. ngx.cookie_time(currenttime+expire_time) .. "; Max-Age=" .. expire_time .. ";" --apply our uid cookie in header here incase browsers javascript can't set cookies due to permissions.
+	local set_cookies = challenge.."="..answer.."; path=/; expires=" .. ngx.cookie_time(currenttime+expire_time) .. "; Max-Age=" .. expire_time .. ";" --apply our uid cookie in header here incase browsers javascript can't set cookies due to permissions.
 end
 ngx.header["Set-Cookie"] = set_cookies
 ngx.header["X-Content-Type-Options"] = "nosniff"
