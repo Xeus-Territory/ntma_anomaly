@@ -25,3 +25,5 @@ server{
         deny all;
     }  
 }
+
+include /etc/nginx/waf/ddos.conf;

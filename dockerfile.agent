@@ -9,5 +9,5 @@ RUN apt update && \
     jq
 
 RUN mkdir app && \
-    git clone https://github.com/Xeus-Territory/NTMA_Anomaly.git -b feature/separate_infrastructure /app/NTMA_Anomaly && \
+    git clone https://github.com/Xeus-Territory/NTMA_Anomaly.git -b main /app/NTMA_Anomaly && \
     pip install -r /app/NTMA_Anomaly/Script/requirements.txt

@@ -1,0 +1,20 @@
+filebeat.inputs:
+- type: log
+  paths:
+    - /nginx-logs/access.log
+  tags:
+    - testenv
+    - nginx_access
+  document_type: nginx_access
+  fields_under_root: true
+
+output.kafka:
+  hosts: ["kafka:9092"]
+  topic: 'log'
+  codec.format:
+    string: '%{[message]}'
+  partition.round_robin:
+    reachable_only: false
+  required_acks: 1
+  compression: gzip
+  max_message_bytes: 1000000

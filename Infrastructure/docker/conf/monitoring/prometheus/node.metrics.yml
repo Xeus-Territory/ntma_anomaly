@@ -1,0 +1,8 @@
+groups:
+  - name: node_exporter_metrics
+    rules:
+      - record: node_network_receive_bytes_per_second
+        expr: sum(rate(node_network_receive_bytes_total{device!~'tap.*|veth.*|br.*|docker.*|virbr.*|lo.*|cni.*'}[1m])*8) by (instance)
+
+      - record: node_network_transmit_bytes_per_second
+        expr: sum(rate(node_network_transmit_bytes_total{device!~'tap.*|veth.*|br.*|docker.*|virbr.*|lo.*|cni.*'}[1m])*8) by (instance)
