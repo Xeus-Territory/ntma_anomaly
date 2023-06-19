@@ -134,7 +134,51 @@ include /etc/nginx/waf/ddos.conf;'''
         os.system(cmd_exec)
     except Exception as e:
         print("Error occurred while running -->" + str(e))
-    
+
+def enum_replica():
+    """
+    Replica information of application on swarm
+
+    Returns:
+        _type_: _description_
+    """    
+    output = subprocess.Popen(['docker', 'service', 'ls'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output1 = subprocess.Popen(['grep', 'app'], stdin=output.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, inp=  subprocess.Popen(['awk', '{print $4}'], stdin=output1.stdout, stdout=subprocess.PIPE).communicate()
+    return out.decode('utf-8').replace('\n', '').split('/')[0], out.decode('utf-8').replace('\n', '').split('/')[1]
+        
+def scaling_app(state, replica):
+    """Scaling todo_app in docker swarm via request come from manager worker
+
+    Args:
+        state (string): state of scaling request. Choice one of ['up' or 'down']
+        replica (string): number of replica want to update after scaling up or down
+    """    
+    active_replica, total_replica = enum_replica()
+    if state == "up":
+        os.system("docker service scale todo_app="+ str(int(active_replica) + int(replica)))
+    if state == "down":
+        if int(active_replica) == 1:
+            pass
+        if int(active_replica) > 1:
+            if (int(active_replica) - int(replica)) >= 1:
+                os.system("docker service scale todo_app=" + str(int(active_replica) - int(replica)))
+            else:
+                pass
+            
+def firewall_interact(state):
+    if state == "up":
+        os.system("cp -rf bak/ddos-default.conf.bak ../../../Infrastructure/docker/conf/nginx/ddos.conf")
+    if state == "down":
+        with open("../../../Infrastructure/docker/conf/nginx/ddos.conf", 'r+') as f:
+            f.truncate()
+            f.close()
+    output1= subprocess.Popen(['docker', 'ps'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, int= subprocess.Popen(['grep', "-oE", "todo_server\.1\.[a-z0-9]+"], stdin=output1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+    cmd_exec = "docker exec " + out.decode("utf-8").replace('\n','') + " service nginx reload > /dev/null"
+    os.system(cmd_exec)
+
+            
 @app.route('/state_update', methods=['POST'])
 def state_update():
     """Update the state of system on state scaling or stable for doing a job with that flag
@@ -187,6 +231,19 @@ def sd():
         print("Doing something")
         sd_nginx(list_ip)
         return "Ok"
+
+@app.route('/scaling', methods= ['POST'])
+def scaling():
+    replica = request.args.get('replica')
+    state = request.args.get('state')
+    scaling_app(state=state, replica=replica)
+    return "Ok"
+
+@app.route('/firewall', methods= ['POST'])
+def firewall():
+    state = request.args.get('state')
+    firewall_interact(state=state)
+    return "Ok"
 
 def __main__():
     update_service(ip=IP_MANAGER, targets=targets_manager)
