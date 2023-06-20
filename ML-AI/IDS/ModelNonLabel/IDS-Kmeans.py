@@ -9,6 +9,16 @@ import warnings
 warnings.filterwarnings('ignore')
 from sklearn.metrics import silhouette_score
 import schedule
+import requests
+from dotenv import load_dotenv
+import os
+import json
+from kafka import KafkaConsumer
+
+# Load the environment variable
+load_dotenv()
+IP_MANAGER = os.environ.get('IP_MANAGER')
+OPENPORT = os.environ.get('OPENPORT')
 
 ## Initialize the param for training 
 PATH_TRAIN_DATA = '../../Data/Collection/data_raw.csv'
@@ -65,9 +75,11 @@ def density_decision(number_req_normal, number_req_abnormal):
         if density >= 0.8:
             if FIREWALL_FLAG == True:
                 FIREWALL_FLAG = False
+                requests.post('http://'+ str(IP_MANAGER) + ":" + str(OPENPORT) + "/firewall?state=down")
         else:
             if FIREWALL_FLAG == False:
                 FIREWALL_FLAG = True
+                requests.post('http://'+ str(IP_MANAGER) + ":" + str(OPENPORT) + "/firewall?state=up")             
     else:
         pass
 
@@ -336,6 +348,17 @@ def validate_model():
         
 def __main__():
     pass    
+
+consumer = KafkaConsumer(
+    "log",
+    bootstrap_servers="192.168.66.1:9092",
+    auto_offset_reset='earliest'
+)
+
+for message in consumer:
+    my_bytes_value = message.value
+    # my_json = my_bytes_value.decode('utf8').replace("'", '"')
+    print(my_bytes_value)
 
     
     

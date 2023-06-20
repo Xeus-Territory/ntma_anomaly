@@ -3,6 +3,12 @@ version: '3'
 volumes:
   redis_data: {}
 
+networks:
+  data_metric:
+    external: true
+  monitoring:
+    external: true
+
 services:
   kafka:
     image: wurstmeister/kafka
@@ -30,6 +36,8 @@ services:
       KAFKA_CREATE_TOPICS: "log"
     depends_on:
       - zookeeper
+    networks:
+      - data_metric
 
   zookeeper:
     image: wurstmeister/zookeeper
@@ -48,6 +56,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - data_metric
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.8.0
@@ -65,6 +75,8 @@ services:
       - "./log:/nginx-logs"
     depends_on:
       - kafka
+    networks:
+      - data_metric
 
   redis:
     image: redis:alpine3.17
@@ -85,6 +97,8 @@ services:
       retries: 5
     # volumes:
     #   - redis_data:/data
+    networks:
+      - data_metric
   
   metrics-redis:
     container_name: metrics-redis
@@ -99,7 +113,7 @@ services:
           memory: 100M
     restart: unless-stopped
     environment:
-      PROMETHEUS_HOSTNAME: 192.168.56.131
+      PROMETHEUS_HOSTNAME: prometheus
       PROMETHEUS_PORT: 9090
       REDIS_HOSTNAME: redis
       REDIS_PORT: 6379
@@ -109,6 +123,9 @@ services:
     depends_on:
       - kafka
       - redis
+    networks:
+      - data_metric
+      - monitoring
       
   metrics-csv:
     container_name: metrics-csv
@@ -128,3 +145,5 @@ services:
       REDIS_PORT: 6379
     depends_on:
       - redis
+    networks:
+      - data_metric

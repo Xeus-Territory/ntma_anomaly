@@ -25,6 +25,7 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
         sudo systemctl start node_exporter.service
+        sudo systemctl enable node_exporter.service
         echo "Node_exporter started successfully"
         exit 0
     else

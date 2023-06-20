@@ -5,10 +5,15 @@ import json
 import subprocess
 from dotenv import load_dotenv
 import time
+import threading
+import telebot
 
 load_dotenv()
 NAME_MANAGER=os.getenv('NAME_MANAGER')
 IP_MANAGER=str(os.getenv('IP_MANAGER'))
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+CHAT_ID   = os.getenv('CHAT_ID')
+bot = telebot.TeleBot(BOT_TOKEN)
 
 app = Flask(__name__)                                                                                                                                                 
 
@@ -74,6 +79,13 @@ def update_service(ip, targets):
                 template[0]['targets'].append(targ)
                 file.seek(0)
                 json.dump(template, file, indent=2)
+
+def nginx_update(sleep_time):
+    output1= subprocess.Popen(['docker', 'ps'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, int= subprocess.Popen(['grep', "-oE", "todo_server\.1\.[a-z0-9]+"], stdin=output1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+    time.sleep(sleep_time)
+    cmd_exec = "docker exec " + out.decode("utf-8").replace('\n','') + " service nginx reload > /dev/null"
+    os.system(cmd_exec)
                 
 def sd_nginx(list_ip):
     """The module for managing the confi of nginx for change round-robin to lease connection and reverse
@@ -83,14 +95,12 @@ def sd_nginx(list_ip):
         for put into upstream inside nginx container
     """    
     global state
-    output1= subprocess.Popen(['docker', 'ps'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, int= subprocess.Popen(['grep', "-oE", "todo_server\.1\.[a-z0-9]+"], stdin=output1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     upstream = ""
     for ip in list_ip:
         if ip is list_ip[-1]:
-            upstream += "    " + ip + ":3000 max_fails=2 fail_timeout=3;"
+            upstream += "    " + "server " + ip + ":3000 max_fails=2 fail_timeout=3;"
         else:
-            upstream += "    " + ip + ":3000 max_fails=2 fail_timeout=3;" + "\n"
+            upstream += "    " + "server " + ip + ":3000 max_fails=2 fail_timeout=3;" + "\n"
     try:
         if state == "scaling":
             template = r'''upstream todo_app {
@@ -114,6 +124,7 @@ server{
     }
 
     location /nginx_status {
+        access_by_lua_block {return}
         stub_status on;
         access_log off;
         allow 127.0.0.1;
@@ -127,11 +138,11 @@ include /etc/nginx/waf/ddos.conf;'''
             conf_file.truncate()
             conf_file.write(template)
             conf_file.close()
+            threading.Thread(target=nginx_update, args=[30]).start()
         else:
             os.system('cp -rf bak/nginx-default.conf.bak ../../../Infrastructure/docker/conf/nginx/nginx-default.conf')
-        time.sleep(30)
-        cmd_exec = "docker exec " + out.decode("utf-8").replace('\n','') + " service nginx reload > /dev/null"
-        os.system(cmd_exec)
+            threading.Thread(target=nginx_update, args=[3]).start()
+
     except Exception as e:
         print("Error occurred while running -->" + str(e))
 
@@ -147,7 +158,7 @@ def enum_replica():
     out, inp=  subprocess.Popen(['awk', '{print $4}'], stdin=output1.stdout, stdout=subprocess.PIPE).communicate()
     return out.decode('utf-8').replace('\n', '').split('/')[0], out.decode('utf-8').replace('\n', '').split('/')[1]
         
-def scaling_app(state, replica):
+def scaling_app(state, replica, message):
     """Scaling todo_app in docker swarm via request come from manager worker
 
     Args:
@@ -156,12 +167,14 @@ def scaling_app(state, replica):
     """    
     active_replica, total_replica = enum_replica()
     if state == "up":
+        bot.send_message(chat_id=CHAT_ID, message=message)
         os.system("docker service scale todo_app="+ str(int(active_replica) + int(replica)))
     if state == "down":
         if int(active_replica) == 1:
             pass
         if int(active_replica) > 1:
             if (int(active_replica) - int(replica)) >= 1:
+                bot.send_message(chat_id=CHAT_ID, message=message)
                 os.system("docker service scale todo_app=" + str(int(active_replica) - int(replica)))
             else:
                 pass
@@ -169,10 +182,12 @@ def scaling_app(state, replica):
 def firewall_interact(state):
     if state == "up":
         os.system("cp -rf bak/ddos-default.conf.bak ../../../Infrastructure/docker/conf/nginx/ddos.conf")
+        bot.send_message(chat_id=CHAT_ID, message="Passive Firewall is turning on")
     if state == "down":
         with open("../../../Infrastructure/docker/conf/nginx/ddos.conf", 'r+') as f:
             f.truncate()
             f.close()
+        bot.send_message(chat_id=CHAT_ID, message="Passive Firewall is turning off")
     output1= subprocess.Popen(['docker', 'ps'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, int= subprocess.Popen(['grep', "-oE", "todo_server\.1\.[a-z0-9]+"], stdin=output1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     cmd_exec = "docker exec " + out.decode("utf-8").replace('\n','') + " service nginx reload > /dev/null"
@@ -236,7 +251,8 @@ def sd():
 def scaling():
     replica = request.args.get('replica')
     state = request.args.get('state')
-    scaling_app(state=state, replica=replica)
+    message = request.args.get('message')
+    scaling_app(state=state, replica=replica, message=message)
     return "Ok"
 
 @app.route('/firewall', methods= ['POST'])

@@ -21,6 +21,7 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
     sudo systemctl start cadvisor.service
+    sudo systemctl enable cadvisor.service
     echo "Cadvisor service is already started successful"
     exit 0
     else
