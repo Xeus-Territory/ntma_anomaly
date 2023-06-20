@@ -12,19 +12,53 @@ import schedule
 import requests
 from dotenv import load_dotenv
 import os
-import json
 from kafka import KafkaConsumer
+import re
+import threading
 
 # Load the environment variable
 load_dotenv()
 IP_MANAGER = os.environ.get('IP_MANAGER')
 OPENPORT = os.environ.get('OPENPORT')
+PROMETHEUS_HOSTNAME= os.environ.get('PROMETHEUS_HOSTNAME')
+PROMETHEUS_PORT= os.environ.get("PROMETHEUS_PORT")
+KAFKA_HOSTNAME= os.environ.get('KAFKA_HOSTNAME')
+KAFKA_PORT= os.environ.get('KAFKA_PORT')
+KAFKA_TOPIC= os.environ.get('KAFKA_TOPIC')
 
+# Initialize kafka consumer instance
+consumer = KafkaConsumer(
+    KAFKA_TOPIC,
+    bootstrap_servers=f"{KAFKA_HOSTNAME}:{KAFKA_PORT}",
+    auto_offset_reset='latest',
+    max_poll_records=1000
+)
+
+# Initialize log regex
+reg_log_pattern = re.compile(
+    r'\"(?P<remote_addr>[^"]+)\"\s'
+    r'\"(?P<remote_usr>[^"]+)\"\s'
+    r'\"(?P<time_local>[^"]+)\"\s'
+    r'\"(?P<request_method>[A-Z]+)\s'
+    r'(?P<request_url>[^"]+)\s'
+    r'(?P<http_version>HTTP/\d\.\d)\"\s'
+    r'\"(?P<status>[^"]+)\"\s'
+    r'\"(?P<body_bytes_sent>[^"]+)\"\s'
+    r'\"(?P<http_referer>[^"]+)\"\s'
+    r'\"(?P<http_user_agent>[^"]+)\"\s'
+    r'\"(?P<http_x_forwarded_for>[^"]+)\"\s'
+    r'\"(?P<request_length>[^"]+)\"\s'
+    r'\"(?P<request_time>[^"]+)\"\s'
+    r'\"(?P<upstream_response_time>[^"]+)\"\s'
+)
+
+        
 ## Initialize the param for training 
 PATH_TRAIN_DATA = '../../Data/Collection/data_raw.csv'
 PATH_RESULT = '../../Data/Collection/result_kmeans.csv'
 FIREWALL_FLAG = False
 RETRAIN_FLAG = False
+MODEL_AVAILABLE = True
 MODEL = KMeans()
 SCORE_TRAIN = 0
 DF_TRAIN = pd.DataFrame()
@@ -65,13 +99,15 @@ def initialize_template(type):
         template_columns = list(pd.read_csv(path).columns)
         DF_PREDICTION = pd.DataFrame(columns=list(template_columns))  
         
-def density_decision(number_req_normal, number_req_abnormal):
-    global FIREWALL_FLAG
-    total = number_req_normal + number_req_abnormal
-    if total >= 1000:
+def density_decision(amount_requests):
+    """Check the density of ratio between normal and abnormal requests rates
+    """    
+    global FIREWALL_FLAG, NUMBER_OF_ATTACK_PREDICT, NUMBER_OF_BENCHMARK_PREDICT, NUMBER_OF_NORMAL_PREDICT
+    total = NUMBER_OF_ATTACK_PREDICT + NUMBER_OF_BENCHMARK_PREDICT + NUMBER_OF_NORMAL_PREDICT
+    if total >= amount_requests:
         # Idea: if the number of normal requests have density >= 80 % (NORMAL)
         #       if the number of normal requests have density < 80 % (ABNORMAL)
-        density = (number_req_normal / total)
+        density = (NUMBER_OF_NORMAL_PREDICT / total)
         if density >= 0.8:
             if FIREWALL_FLAG == True:
                 FIREWALL_FLAG = False
@@ -146,6 +182,9 @@ def preprocess_data(df_raw):
     df['supicious_user_agent'] = supicious_user_agent
     df = df.drop(columns=['http_user_agent'])
     
+    ## Fill na when situation request return 4xx and 5xx cannot have enough data
+    df = df.replace("-", 0)
+    
     return df
 
 def preprocess_data_V2(df_raw):
@@ -173,27 +212,27 @@ def preprocess_data_V2(df_raw):
     POST = []
     PUT = []
     DELETE = []
-    method = df['request_method'].values[0]
-    if method == 'POST':
-        GET.append(0)
-        POST.append(1)
-        PUT.append(0)
-        DELETE.append(0)
-    if method == 'GET':
-        GET.append(1)
-        POST.append(0)
-        PUT.append(0)
-        DELETE.append(0)
-    if method == 'DELETE':
-        GET.append(0)
-        POST.append(0)
-        PUT.append(0)
-        DELETE.append(1)
-    if method == "PUT":
-        GET.append(0)
-        POST.append(0)
-        PUT.append(1)
-        DELETE.append(0)
+    for method in df['request_method']:
+        if method == 'POST':
+            GET.append(0)
+            POST.append(1)
+            PUT.append(0)
+            DELETE.append(0)
+        if method == 'GET':
+            GET.append(1)
+            POST.append(0)
+            PUT.append(0)
+            DELETE.append(0)
+        if method == 'DELETE':
+            GET.append(0)
+            POST.append(0)
+            PUT.append(0)
+            DELETE.append(1)
+        if method == "PUT":
+            GET.append(0)
+            POST.append(0)
+            PUT.append(1)
+            DELETE.append(0)
     df['DELETE'] = DELETE
     df['GET'] = GET
     df['POST'] = POST
@@ -218,13 +257,13 @@ def preprocess_data_V2(df_raw):
     ## Process http_version: using one hot lable encoding
     HTTP_10 = []
     HTTP_11 = []
-    version = df['http_version'].values[0]
-    if version == "HTTP/1.0":
-        HTTP_10.append(1)
-        HTTP_11.append(0)
-    if version == "HTTP/1.1":
-        HTTP_11.append(1)
-        HTTP_10.append(0)
+    for version in df['http_version']:
+        if version == "HTTP/1.0":
+            HTTP_10.append(1)
+            HTTP_11.append(0)
+        if version == "HTTP/1.1":
+            HTTP_11.append(1)
+            HTTP_10.append(0)
     df['HTTP/1.0'] = HTTP_10
     df['HTTP/1.1'] = HTTP_11
     df = df.drop(columns=['http_version'])
@@ -245,6 +284,9 @@ def preprocess_data_V2(df_raw):
     df['supicious_user_agent'] = supicious_user_agent
     df = df.drop(columns=['http_user_agent'])
     
+    ## Fill na when situation request return 4xx and 5xx cannot have enough data
+    df = df.replace("-", 0)
+    
     return df
 
 def post_processing(df_predict):
@@ -257,18 +299,20 @@ def post_processing(df_predict):
         dataframe: new dataframe after post-processiong and fix correction situation
     """   
     df = df_predict
-    # Change label base on the assign number
+    # Change label base on the assign number (Just random pick incase - Not important)
     df.loc[(df['cluster_kmeans'] == 1), ['cluster_kmeans']] = "normal"
     df.loc[(df['cluster_kmeans'] == 3), ['cluster_kmeans']] = "webattack"
     df.loc[(df['cluster_kmeans'] == 2), ['cluster_kmeans']] = "benchmark"
     
-    # Change label cluster info base on the knowledge
+    # Change label cluster info base on the knowledge (Base on analysis graph - decision partition for 3 type of request)
     df.loc[(df['request_time'] <= 0.2) & (df['network_receive_bytes_per_second'] <= 1900000), ['cluster_kmeans']] = "normal"
     df.loc[((df['request_time'] > 0.2) & (df['network_receive_bytes_per_second'] <= 3500000)) | ((df['network_receive_bytes_per_second'] > 1900000) & (df['network_receive_bytes_per_second'] <= 3500000)), ['cluster_kmeans']] = "webattack"
     df.loc[(df['network_receive_bytes_per_second'] > 3500000), ['cluster_kmeans']] = "benchmark"
     
     # Fix the situation need to right
     df.loc[(df['valid_user_agent'] == 1) & (df['available_request'] == 1), ['cluster_kmeans']] = "normal"
+    df.loc[(df['valid_user_agent'] == 0) & (df['available_request'] == 0), ['cluster_kmeans']] = "webattack"
+    df.loc[(df['valid_user_agent'] == 1) & (df['available_request'] == 0), ['cluster_kmeans']] = "webattack"
     
     return df
 
@@ -279,7 +323,8 @@ def kmeans_model_train(df_raw):
         df_preprocess (_type_): _description_
         
     """ 
-    global MODEL, SCORE_TRAIN, NUMBER_OF_NORMAL_TRAIN, NUMBER_OF_ATTACK_TRAIN, NUMBER_OF_BENCHMARK_TRAIN   
+    global MODEL, SCORE_TRAIN, NUMBER_OF_NORMAL_TRAIN, NUMBER_OF_ATTACK_TRAIN, NUMBER_OF_BENCHMARK_TRAIN, MODEL_AVAILABLE
+    MODEL_AVAILABLE = False   
     df = preprocess_data(df_raw)
     
     # KMeans
@@ -288,6 +333,7 @@ def kmeans_model_train(df_raw):
     silhouette_score_average = silhouette_score(df, kmean3.predict(df))
     MODEL = kmean3
     SCORE_TRAIN = silhouette_score_average
+    print(SCORE_TRAIN)
     
     y_pred = MODEL.fit_predict(df)
     df['cluster_kmeans'] = y_pred+1
@@ -296,17 +342,21 @@ def kmeans_model_train(df_raw):
     df = post_processing(df)
     
     # Statictis the label
-    NUMBER_OF_NORMAL_TRAIN = df['cluster_kmeans'].value_counts()['normal']
-    NUMBER_OF_ATTACK_TRAIN = df['cluster_kmeans'].value_counts()['webattack']
-    NUMBER_OF_BENCHMARK_TRAIN = df['cluster_kmeans'].value_counts()['benchmark']
+    # NUMBER_OF_NORMAL_TRAIN = df['cluster_kmeans'].value_counts()['normal']
+    # NUMBER_OF_ATTACK_TRAIN = df['cluster_kmeans'].value_counts()['webattack']
+    # NUMBER_OF_BENCHMARK_TRAIN = df['cluster_kmeans'].value_counts()['benchmark']
+    
+    # Update the state of Available Flag
+    MODEL_AVAILABLE = True 
+    print("Successfully build and ready for receive queue message from kafka cluster")
 
 def kmeans_predict(df_raw):
     """Prediction for each log through by message queue from kafka
 
     Args:
-        df_raw (dataframe): Raw data pass for prediction proccess from kafka 
+        raw (list): Raw data pass for prediction proccess from kafka 
     """    
-    global NUMBER_OF_NORMAL_PREDICT, NUMBER_OF_BENCHMARK_PREDICT, NUMBER_OF_ATTACK_PREDICT, DF_TRAIN, MODEL
+    global NUMBER_OF_NORMAL_PREDICT, NUMBER_OF_BENCHMARK_PREDICT, NUMBER_OF_ATTACK_PREDICT, DF_PREDICTION, MODEL
     DF_PREDICTION = pd.concat([DF_PREDICTION, df_raw], ignore_index= True)
     df = preprocess_data_V2(df_raw)
     y_pred = MODEL.predict(df)
@@ -342,26 +392,90 @@ def validate_model():
         else:
             DF_TRAIN = DF_TRAIN.iloc[length_df_predictions:]
             DF_TRAIN = pd.concat([DF_TRAIN, DF_PREDICTION], ignore_index=True)
-        kmeans_model_train(DF_TRAIN)
+        threading.Thread(target=kmeans_model_train, args=(DF_TRAIN)).start()
         RETRAIN_FLAG = False
-        
+
+def queue_message(message, dtypes):
+    """
+        Threading for message queue and throughput for prediction
+    """
+    message_decode = message.decode('utf8').replace("'", '"')
+    log_data = reg_log_pattern.match(message_decode).groupdict()
+
+    try:
+        prometheus_url = f"http://{PROMETHEUS_HOSTNAME}:{PROMETHEUS_PORT}"
+        query = '{__name__=~"node_network_receive_bytes_per_second|node_network_transmit_bytes_per_second"}'
+        api_url = f'{prometheus_url}/api/v1/query?query={query}'
+        response = requests.get(api_url, timeout=1)
+
+        if response.status_code == 200:
+            data = response.json()
+
+            if 'data' in data and 'result' in data['data']:
+                result = data['data']['result']
+                if len(result) > 0:
+                    network_receive_bytes_per_second = result[0]['value'][1]
+                    network_transmit_bytes_per_second = result[1]['value'][1]
+                else:
+                    network_receive_bytes_per_second = 0
+                    network_transmit_bytes_per_second = 0
+            else:
+                network_receive_bytes_per_second = 0
+                network_transmit_bytes_per_second = 0
+        else:
+            network_receive_bytes_per_second = 0
+            network_transmit_bytes_per_second = 0
+    except Exception as e:
+        network_receive_bytes_per_second = 0
+        network_transmit_bytes_per_second = 0
+        print("Error Request Occur: ", e)
+
+    # Convert dataraw into dataframe format and predict
+    format_log = list(log_data.values())
+    format_log.append(network_receive_bytes_per_second)
+    format_log.append(network_transmit_bytes_per_second)
+    df_raw = initialize_input(format_log)
+    if df_raw['upstream_response_time'].values[0] == "-":
+        df_raw['upstream_response_time'] = 0
+    df_raw = df_raw.astype(dtypes)
+    while True:
+        if MODEL_AVAILABLE == True:
+            break
+        if MODEL_AVAILABLE == False:
+            continue
+    kmeans_predict(df_raw)
+    
+def schedule_model():
+    schedule.every(1).hours.do(validate_model)
+    schedule.every(5).minutes.do(density_decision, args=[5000])
+    while True:
+        schedule.run_all()
         
 def __main__():
-    pass    
+    global DF_TRAIN, DF_PREDICTION, FIREWALL_FLAG, RETRAIN_FLAG
+    global MODEL, SCORE_TRAIN, PREDICT_LABEL
+    global NUMBER_OF_ATTACK_TRAIN, NUMBER_OF_NORMAL_TRAIN, NUMBER_OF_BENCHMARK_TRAIN
+    global NUMBER_OF_ATTACK_PREDICT, NUMBER_OF_BENCHMARK_PREDICT, NUMBER_OF_NORMAL_PREDICT
+    
+    # Initialize the training model
+    DF_TRAIN = pd.read_csv(PATH_TRAIN_DATA)
+    DF_TRAIN_DTYPES = DF_TRAIN.dtypes.to_dict()
+    threading.Thread(target=kmeans_model_train, args=(), kwargs={'df_raw': DF_TRAIN}).start()
+    
+    # Schedule for validation model, firewall handling
+    threading.Thread(target=schedule_model)
+    
+    # Queue the message from kafka
+    for message in consumer:
+        try:
+            threading.Thread(target=queue_message, args=(message.value, DF_TRAIN_DTYPES)).start()
+        except Exception as e:
+            print("Error Queue Occur: ", e)
 
-consumer = KafkaConsumer(
-    "log",
-    bootstrap_servers="192.168.66.1:9092",
-    auto_offset_reset='earliest'
-)
-
-for message in consumer:
-    my_bytes_value = message.value
-    # my_json = my_bytes_value.decode('utf8').replace("'", '"')
-    print(my_bytes_value)
-
-    
-    
-    
-    
-    
+if __name__ == '__main__':
+    try:
+        __main__()
+    except KeyboardInterrupt:
+        print("End of queue and model AI")
+        exit(1)
+        
