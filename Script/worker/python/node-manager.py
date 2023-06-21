@@ -167,14 +167,14 @@ def scaling_app(state, replica, message):
     """    
     active_replica, total_replica = enum_replica()
     if state == "up":
-        bot.send_message(chat_id=CHAT_ID, message=message)
+        bot.send_message(chat_id=CHAT_ID, text=message)
         os.system("docker service scale todo_app="+ str(int(active_replica) + int(replica)))
     if state == "down":
         if int(active_replica) == 1:
             pass
         if int(active_replica) > 1:
             if (int(active_replica) - int(replica)) >= 1:
-                bot.send_message(chat_id=CHAT_ID, message=message)
+                bot.send_message(chat_id=CHAT_ID, text=message)
                 os.system("docker service scale todo_app=" + str(int(active_replica) - int(replica)))
             else:
                 pass
@@ -182,12 +182,12 @@ def scaling_app(state, replica, message):
 def firewall_interact(state):
     if state == "up":
         os.system("cp -rf bak/ddos-default.conf.bak ../../../Infrastructure/docker/conf/nginx/ddos.conf")
-        bot.send_message(chat_id=CHAT_ID, message="Passive Firewall is turning on")
+        bot.send_message(chat_id=CHAT_ID, text="Passive Firewall is turning on")
     if state == "down":
         with open("../../../Infrastructure/docker/conf/nginx/ddos.conf", 'r+') as f:
             f.truncate()
             f.close()
-        bot.send_message(chat_id=CHAT_ID, message="Passive Firewall is turning off")
+        bot.send_message(chat_id=CHAT_ID, text="Passive Firewall is turning off")
     output1= subprocess.Popen(['docker', 'ps'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, int= subprocess.Popen(['grep', "-oE", "todo_server\.1\.[a-z0-9]+"], stdin=output1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     cmd_exec = "docker exec " + out.decode("utf-8").replace('\n','') + " service nginx reload > /dev/null"
@@ -259,6 +259,12 @@ def scaling():
 def firewall():
     state = request.args.get('state')
     firewall_interact(state=state)
+    return "Ok"
+
+@app.route('/security_info', methods= ['POST'])
+def security_info():
+    density = request.args.get('density')
+    bot.send_message(chat_id=CHAT_ID, text="Current Density of Normals/Totals: {density}".format(density=density))
     return "Ok"
 
 def __main__():

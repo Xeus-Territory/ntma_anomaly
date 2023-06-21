@@ -15,6 +15,8 @@ import os
 from kafka import KafkaConsumer
 import re
 import threading
+from concurrent.futures import ThreadPoolExecutor
+import time
 
 # Load the environment variable
 load_dotenv()
@@ -58,12 +60,13 @@ PATH_TRAIN_DATA = '../../Data/Collection/data_raw.csv'
 PATH_RESULT = '../../Data/Collection/result_kmeans.csv'
 FIREWALL_FLAG = False
 RETRAIN_FLAG = False
-MODEL_AVAILABLE = True
+MODEL_AVAILABLE = False
 MODEL = KMeans()
 SCORE_TRAIN = 0
 DF_TRAIN = pd.DataFrame()
 DF_PREDICTION = pd.DataFrame()
 PREDICT_LABEL = []
+AVAILABLE_PREDICT_LABEL = True
 NUMBER_OF_NORMAL_TRAIN = 0
 NUMBER_OF_ATTACK_TRAIN = 0
 NUMBER_OF_BENCHMARK_TRAIN = 0
@@ -93,30 +96,48 @@ def initialize_template(type):
     if type == 'train':
         path = PATH_TRAIN_DATA
         template_columns = list(pd.read_csv(path).columns)
-        DF_TRAIN = pd.DataFrame(columns=template_columns)
+        DF_PREDICTION = pd.DataFrame(columns=template_columns)
     if type == 'predict':
         path = PATH_RESULT
         template_columns = list(pd.read_csv(path).columns)
         DF_PREDICTION = pd.DataFrame(columns=list(template_columns))  
         
-def density_decision(amount_requests):
+def density_decision(amount_request):
     """Check the density of ratio between normal and abnormal requests rates
     """    
     global FIREWALL_FLAG, NUMBER_OF_ATTACK_PREDICT, NUMBER_OF_BENCHMARK_PREDICT, NUMBER_OF_NORMAL_PREDICT
-    total = NUMBER_OF_ATTACK_PREDICT + NUMBER_OF_BENCHMARK_PREDICT + NUMBER_OF_NORMAL_PREDICT
-    if total >= amount_requests:
-        # Idea: if the number of normal requests have density >= 80 % (NORMAL)
-        #       if the number of normal requests have density < 80 % (ABNORMAL)
-        density = (NUMBER_OF_NORMAL_PREDICT / total)
-        if density >= 0.8:
-            if FIREWALL_FLAG == True:
-                FIREWALL_FLAG = False
-                requests.post('http://'+ str(IP_MANAGER) + ":" + str(OPENPORT) + "/firewall?state=down")
+    try:
+        total = NUMBER_OF_ATTACK_PREDICT + NUMBER_OF_BENCHMARK_PREDICT + NUMBER_OF_NORMAL_PREDICT
+        if total >= amount_request:
+            # Idea: if the number of normal requests have density >= 80 % (NORMAL)
+            #       if the number of normal requests have density < 80 % (ABNORMAL)
+            density = (NUMBER_OF_NORMAL_PREDICT / total)
+            if density >= 0.8:
+                if FIREWALL_FLAG == True:
+                    FIREWALL_FLAG = False
+                    requests.post('http://' + str(IP_MANAGER) + ":" + str(OPENPORT) + "/security_info?density={density}".format(density=density))
+                    requests.post('http://'+ str(IP_MANAGER) + ":" + str(OPENPORT) + "/firewall?state=down")
+                    NUMBER_OF_ATTACK_PREDICT = 0
+                    NUMBER_OF_BENCHMARK_PREDICT = 0
+                    NUMBER_OF_NORMAL_PREDICT = 0
+                    return
+                if FIREWALL_FLAG == False:
+                    print("Nothing to change here")
+            else:
+                if FIREWALL_FLAG == False:
+                    FIREWALL_FLAG = True
+                    requests.post('http://' + str(IP_MANAGER) + ":" + str(OPENPORT) + "/security_info?density={density}".format(density=density))
+                    requests.post('http://'+ str(IP_MANAGER) + ":" + str(OPENPORT) + "/firewall?state=up")
+                    NUMBER_OF_ATTACK_PREDICT = 0
+                    NUMBER_OF_BENCHMARK_PREDICT = 0
+                    NUMBER_OF_NORMAL_PREDICT = 0
+                    return
+                if FIREWALL_FLAG == True:
+                    print("Nothing to change here")     
         else:
-            if FIREWALL_FLAG == False:
-                FIREWALL_FLAG = True
-                requests.post('http://'+ str(IP_MANAGER) + ":" + str(OPENPORT) + "/firewall?state=up")             
-    else:
+            pass
+    except Exception as e:
+        print("Error: " + str(e))
         pass
 
 
@@ -316,6 +337,16 @@ def post_processing(df_predict):
     
     return df
 
+def calculate_score_model(df_preprocess):
+    """Calculator the score of model Kmean base on euclidean distance
+
+    Args:
+        df_preprocess (dataframe): DataFrame after preprocess
+    """    
+    global SCORE_TRAIN,MODEL
+    SCORE_TRAIN = silhouette_score(df_preprocess, MODEL.predict(df_preprocess))
+    print("Scoring of current model KMEANs: ", SCORE_TRAIN)
+
 def kmeans_model_train(df_raw):
     """Building a kmeans for trainning process
 
@@ -328,12 +359,10 @@ def kmeans_model_train(df_raw):
     df = preprocess_data(df_raw)
     
     # KMeans
-    kmean3 = KMeans(n_clusters=3)
+    kmean3 = KMeans(n_clusters=3, verbose=1)
     kmean3.fit(df)
-    silhouette_score_average = silhouette_score(df, kmean3.predict(df))
     MODEL = kmean3
-    SCORE_TRAIN = silhouette_score_average
-    print(SCORE_TRAIN)
+    threading.Thread(target=calculate_score_model, kwargs={'df_preprocess': df}).start()
     
     y_pred = MODEL.fit_predict(df)
     df['cluster_kmeans'] = y_pred+1
@@ -356,7 +385,7 @@ def kmeans_predict(df_raw):
     Args:
         raw (list): Raw data pass for prediction proccess from kafka 
     """    
-    global NUMBER_OF_NORMAL_PREDICT, NUMBER_OF_BENCHMARK_PREDICT, NUMBER_OF_ATTACK_PREDICT, DF_PREDICTION, MODEL
+    global NUMBER_OF_NORMAL_PREDICT, NUMBER_OF_BENCHMARK_PREDICT, NUMBER_OF_ATTACK_PREDICT, DF_PREDICTION, MODEL, PREDICT_LABEL, AVAILABLE_PREDICT_LABEL
     DF_PREDICTION = pd.concat([DF_PREDICTION, df_raw], ignore_index= True)
     df = preprocess_data_V2(df_raw)
     y_pred = MODEL.predict(df)
@@ -364,36 +393,61 @@ def kmeans_predict(df_raw):
     df = post_processing(df)
     state_req = df['cluster_kmeans'].values[0]
     print(state_req)
-    if state_req == "normal":
-        PREDICT_LABEL.append(1)
-        NUMBER_OF_NORMAL_PREDICT = NUMBER_OF_NORMAL_PREDICT + 1
-    if state_req == "webattack":
-        PREDICT_LABEL.append(3)
-        NUMBER_OF_ATTACK_PREDICT = NUMBER_OF_ATTACK_PREDICT + 1
-    if state_req == "benchmark":
-        PREDICT_LABEL.append(2)
-        NUMBER_OF_BENCHMARK_PREDICT = NUMBER_OF_BENCHMARK_PREDICT + 1
+    while True:
+        if AVAILABLE_PREDICT_LABEL == True:
+            AVAILABLE_PREDICT_LABEL = False
+            if state_req == "normal":
+                PREDICT_LABEL.append(0)
+                NUMBER_OF_NORMAL_PREDICT = NUMBER_OF_NORMAL_PREDICT + 1
+            if state_req == "webattack":
+                PREDICT_LABEL.append(1)
+                NUMBER_OF_ATTACK_PREDICT = NUMBER_OF_ATTACK_PREDICT + 1
+            if state_req == "benchmark":
+                PREDICT_LABEL.append(3)
+                NUMBER_OF_BENCHMARK_PREDICT = NUMBER_OF_BENCHMARK_PREDICT + 1
+            AVAILABLE_PREDICT_LABEL = True
+            break
+        if AVAILABLE_PREDICT_LABEL == False:
+            continue
+        
         
 def validate_model():
     """
         Validate the model base on silhouette score for give evaluation for curren model
     """    
-    global SCORE_TRAIN, DF_TRAIN, DF_PREDICTION, PREDICT_LABEL, RETRAIN_FLAG
-    SCORE_PREDICTION = silhouette_score(DF_TRAIN, PREDICT_LABEL)
-    if SCORE_TRAIN - SCORE_PREDICTION <= 0.1:
-        RETRAIN_FLAG = False
-    if SCORE_TRAIN - SCORE_PREDICTION > 0.1:
-        RETRAIN_FLAG = True
-    if RETRAIN_FLAG:
-        length_df_train = len(DF_TRAIN.index)
-        length_df_predictions = len(DF_PREDICTION.index)
-        if length_df_train <= length_df_predictions:
-            DF_TRAIN = DF_PREDICTION
+    global SCORE_TRAIN, DF_PREDICTION, RETRAIN_FLAG, MODEL, PREDICT_LABEL, DF_TRAIN
+    try:
+        DF_PREDICTION_PRE_PROCESS = preprocess_data_V2(DF_PREDICTION)
+        PRED = PREDICT_LABEL
+        lenght_pred = len(PRED)
+        if lenght_pred > len(DF_PREDICTION_PRE_PROCESS.index):
+            PRED = PREDICT_LABEL[:len(DF_PREDICTION_PRE_PROCESS.index)]
+        if len(np.unique(PRED)) > 1:
+            SCORE_PREDICTION = silhouette_score(DF_PREDICTION_PRE_PROCESS, PRED)
+            print("Recoring of current model KMEANs: ", SCORE_PREDICTION)
+            if SCORE_TRAIN - SCORE_PREDICTION <= 0.1:
+                RETRAIN_FLAG = False
+            if SCORE_TRAIN - SCORE_PREDICTION > 0.1:
+                RETRAIN_FLAG = True
+            if RETRAIN_FLAG:
+                print("Retrain Occur")
+                length_df_train = len(DF_TRAIN.index)
+                length_df_predictions = len(DF_PREDICTION.index)
+                if length_df_train <= length_df_predictions:
+                    DF_TRAIN = DF_PREDICTION
+                else:
+                    DF_TRAIN = DF_TRAIN.iloc[length_df_predictions:]
+                    DF_TRAIN = pd.concat([DF_TRAIN, DF_PREDICTION], ignore_index=True)
+                threading.Thread(target=kmeans_model_train, kwargs={'df_raw': DF_TRAIN}).start()
+                DF_PREDICTION = pd.DataFrame()
+                PREDICT_LABEL = PREDICT_LABEL[len(DF_PREDICTION_PRE_PROCESS.index):]
+                RETRAIN_FLAG = False
         else:
-            DF_TRAIN = DF_TRAIN.iloc[length_df_predictions:]
-            DF_TRAIN = pd.concat([DF_TRAIN, DF_PREDICTION], ignore_index=True)
-        threading.Thread(target=kmeans_model_train, args=(DF_TRAIN)).start()
-        RETRAIN_FLAG = False
+            pass      
+    except Exception as e:
+        print("Error training model: " + str(e))
+        pass
+        
 
 def queue_message(message, dtypes):
     """
@@ -446,10 +500,13 @@ def queue_message(message, dtypes):
     kmeans_predict(df_raw)
     
 def schedule_model():
-    schedule.every(1).hours.do(validate_model)
-    schedule.every(5).minutes.do(density_decision, args=[5000])
+    """Schedule the model for validation model, firewall decision
+    """    
+    schedule.every(30).minutes.do(validate_model)
+    schedule.every(60).seconds.do(density_decision, amount_request=20)
     while True:
-        schedule.run_all()
+        schedule.run_pending()
+        time.sleep(1)
         
 def __main__():
     global DF_TRAIN, DF_PREDICTION, FIREWALL_FLAG, RETRAIN_FLAG
@@ -463,12 +520,13 @@ def __main__():
     threading.Thread(target=kmeans_model_train, args=(), kwargs={'df_raw': DF_TRAIN}).start()
     
     # Schedule for validation model, firewall handling
-    threading.Thread(target=schedule_model)
+    threading.Thread(target=schedule_model).start()
     
     # Queue the message from kafka
+    pool = ThreadPoolExecutor(max_workers=5)
     for message in consumer:
         try:
-            threading.Thread(target=queue_message, args=(message.value, DF_TRAIN_DTYPES)).start()
+            pool.submit(queue_message, message.value, DF_TRAIN_DTYPES)
         except Exception as e:
             print("Error Queue Occur: ", e)
 
