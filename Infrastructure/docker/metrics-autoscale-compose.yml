@@ -4,6 +4,12 @@ volumes:
   prometheus_data: {}
   redis_data: {}
 
+networks:
+  data-metric:
+    external: true
+  monitoring:
+    external: true
+
 services:  
   prometheus:
     image: prom/prometheus:v2.37.6
@@ -50,30 +56,6 @@ services:
     volumes:
       - ./log/access.log:/mnt/nginxlogs/access.log
       - ./conf/nginxlog/nginxlog_exporter.yml:/etc/prometheus-nginxlog-exporter.yml
-  
-  # cadvisor:
-  #   image: gcr.io/google-containers/cadvisor:v0.36.0
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: '0.50'
-  #         memory: 500M
-  #       reservations:
-  #         cpus: '0.25'
-  #         memory: 100M
-  #   container_name: cadvisor
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: wget --quiet --tries=1 --spider http://localhost:8080/containers/
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 5
-  #   volumes:
-  #     - /:/rootfs:ro
-  #     - /var/run:/var/run:ro
-  #     - /sys:/sys:ro
-  #     - /var/lib/docker/:/var/lib/docker:ro
-  #     - /dev/disk/:/dev/disk:ro
   
   prometheus-kafka-adapter:
     image: telefonica/prometheus-kafka-adapter:1.8.0
