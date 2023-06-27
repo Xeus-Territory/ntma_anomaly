@@ -9,7 +9,7 @@ filebeat.inputs:
   fields_under_root: true
 
 output.kafka:
-  hosts: ["kafka:9092"]
+  hosts: '${KAFKA_HOST}:9092'
   topic: 'log'
   codec.format:
     string: '%{[message]}'

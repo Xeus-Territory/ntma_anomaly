@@ -25,7 +25,7 @@ if [[ "$2" == "create" ]]; then
     else
         echo "The data_metric network really exist"
     fi
-    docker-compose -f "$abs_path_infrastructure/$whatmetricserver" up -d
+    docker-compose -f "$abs_path_infrastructure/$whatmetricserver" --env-file "$abs_path_folder_root/.env" up -d
     echo "Creating the metric server completed successfully, waiting for minutue to access successfully"
     exit 0
 elif [[ "$2" == "destroy" ]]; then
@@ -34,11 +34,11 @@ elif [[ "$2" == "destroy" ]]; then
     exit 0
 elif [[ "$2" == "update" ]]; then
     docker-compose -f "$abs_path_infrastructure/$whatmetricserver" pull
-    docker-compose -f "$abs_path_infrastructure/$whatmetricserver" up -d
+    docker-compose -f "$abs_path_infrastructure/$whatmetricserver" --env-file "$abs_path_folder_root/.env" up -d
     echo "Updating the metric server completed successfully"
     exit 0
 elif [[ "$2" == "up" ]]; then
-    docker-compose -f "$abs_path_infrastructure/$whatmetricserver" start
+    docker-compose -f "$abs_path_infrastructure/$whatmetricserver" --env-file "$abs_path_folder_root/.env" start
     echo "Starting the metric server completed successfully"
     exit 0
 elif [[ "$2" == "down" ]]; then
