@@ -84,7 +84,7 @@
 
 2. Common request for interaction mode
 
-    `python3 demand_bot.py -T interactive -l localhost -d /items -m GET POST PUT DELETE -t 120 -s 30 -D {"name":"HelloWorld!!!"}`
+    `python3 demand_bot.py -T interact -l localhost -d /items -m GET POST PUT DELETE -t 120 -s 30 -D {"name":"HelloWorld!!!"}`
 
 3. Benchmarking
 
