@@ -3,3 +3,11 @@ requests
 python-dotenv
 telebot
 schedule
+pandas
+seaborn
+matplotlib
+numpy
+user_agents
+scikit-learn
+python-dotenv
+kafka-python

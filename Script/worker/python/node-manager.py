@@ -203,6 +203,9 @@ def state_update():
     """    
     global state
     state = request.args.get('state')
+    if state == 'stable':
+        os.system('cp -rf bak/nginx-default.conf.bak ../../../Infrastructure/docker/conf/nginx/nginx-default.conf')
+        threading.Thread(target=nginx_update, args=[3]).start()
     return "Ok"
 
 @app.route('/join', methods=['POST'])
