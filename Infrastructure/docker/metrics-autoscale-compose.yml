@@ -11,33 +11,6 @@ networks:
     external: true
 
 services:  
-  prometheus:
-    image: prom/prometheus:v2.37.6
-    deploy:
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 500M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
-    container_name: prometheus
-    restart: unless-stopped
-    healthcheck:
-      test: wget --quiet --tries=1 --spider http://localhost:9090
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--web.enable-lifecycle'
-      - '--storage.tsdb.path=/prometheus'
-    volumes:
-      - prometheus_data:/prometheus
-      - ./conf/monitoring/prometheus/:/etc/prometheus/
-    ports:
-      - 9090:9090
-
   nginxlog_exporter:
     image: quay.io/martinhelmich/prometheus-nginxlog-exporter:v1.10.0
     container_name: nginxlog-exporter
@@ -46,9 +19,6 @@ services:
         limits:
           cpus: '0.50'
           memory: 200M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     command:
       - '--config-file=/etc/prometheus-nginxlog-exporter.yml'
     ports:
@@ -64,12 +34,9 @@ services:
         limits:
           cpus: '0.50'
           memory: 200M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     container_name: prometheus-kafka-adapter
     environment:
-      KAFKA_BROKERS: kafka:9092
+      KAFKA_BROKERS: ${KAFKA_HOST}:9092
       KAFKA_TOPIC: prometheus-metrics
     depends_on:
       - kafka
@@ -82,9 +49,6 @@ services:
         limits:
           cpus: '0.50'
           memory: 200M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     restart: unless-stopped
     healthcheck:
       test: nc -z localhost 2181 || exit -1
@@ -102,9 +66,6 @@ services:
         limits:
           cpus: '0.50'
           memory: 500M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     restart: unless-stopped
     healthcheck:
       test: nc -z localhost 9092 || exit -1
@@ -112,7 +73,7 @@ services:
       timeout: 10s
       retries: 5
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ADVERTISED_HOST_NAME: ${KAFKA_HOST}
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: prometheus-metrics
     depends_on:
@@ -153,7 +114,7 @@ services:
     environment:
       REDIS_HOSTNAME: redis
       REDIS_PORT: 6379
-      KAFKA_HOSTNAME: kafka
+      KAFKA_HOSTNAME: ${KAFKA_HOST}
       KAFKA_PORT: 9092
       KAFKA_TOPIC: prometheus-metrics
     depends_on:

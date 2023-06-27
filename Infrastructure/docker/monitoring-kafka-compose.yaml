@@ -12,9 +12,6 @@ services:
         limits:
           cpus: '0.50'
           memory: 500M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     container_name: prometheus
     restart: unless-stopped
     healthcheck:
@@ -40,13 +37,9 @@ services:
         limits:
           cpus: '0.50'
           memory: 200M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     command:
       - '--config-file=/etc/prometheus-nginxlog-exporter.yml'
     volumes:
-      # - ./nginx/log/access.log:/mnt/nginxlogs/access.log
       - /home/monitoring/NTMA_Anomaly/Infrastructure/docker/log/access.log:/mnt/nginxlogs/access.log
       - ./nginxlog/nginxlog_exporter.yml:/etc/prometheus-nginxlog-exporter.yml
   
@@ -57,9 +50,6 @@ services:
         limits:
           cpus: '0.50'
           memory: 500M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     container_name: cadvisor
     restart: unless-stopped
     healthcheck:
@@ -81,12 +71,9 @@ services:
         limits:
           cpus: '0.50'
           memory: 200M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     container_name: prometheus-kafka-adapter
     environment:
-      KAFKA_BROKERS: kafka:9092
+      KAFKA_BROKERS: ${KAFKA}:9092
       KAFKA_TOPIC: prometheus-metrics
     depends_on:
       - kafka
@@ -99,9 +86,6 @@ services:
         limits:
           cpus: '0.50'
           memory: 200M
-        reservations:
-          cpus: '0.25'
-          memory: 100M
     restart: unless-stopped
     healthcheck:
       test: nc -z localhost 2181 || exit -1
@@ -129,7 +113,7 @@ services:
       timeout: 10s
       retries: 5
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ADVERTISED_HOST_NAME: ${KAFKA_HOST}
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: prometheus-metrics
     depends_on:
@@ -170,7 +154,7 @@ services:
     environment:
       REDIS_HOSTNAME: redis
       REDIS_PORT: 6379
-      KAFKA_HOSTNAME: kafka
+      KAFKA_HOSTNAME: ${KAFKA_HOST}
       KAFKA_PORT: 9092
       KAFKA_TOPIC: prometheus-metrics
     depends_on:
