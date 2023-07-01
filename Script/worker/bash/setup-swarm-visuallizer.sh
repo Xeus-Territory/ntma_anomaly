@@ -95,6 +95,20 @@ elif [[ "$1" == "destroy" ]]; then
         fi
         echo "Successfully removed docker-swarm-visualizer"
     fi
+elif [[ "$1" == "up" ]]; then
+    {
+        docker start docker-swarm-visualizer
+        echo "docker-swarm-visualizer successfully started"
+    } || {
+        exit 1
+    }
+elif [[ "$1" == "down" ]]; then
+    {
+        docker stop docker-swarm-visualizer
+        echo "docker-swarm-visualizer successfully stopped"
+    } || {
+        exit 1
+    }
 # Error when not input the action
 elif [[ "$1" == "" ]]; then
     echo "Error: No option specified for docker-swarm-visualizer, please specify and try again !!!"

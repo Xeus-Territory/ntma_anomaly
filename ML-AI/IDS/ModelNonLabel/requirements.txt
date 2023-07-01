@@ -1,0 +1,9 @@
+pandas
+seaborn
+matplotlib
+numpy
+user_agents
+scikit-learn
+schedule
+python-dotenv
+kafka-python

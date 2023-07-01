@@ -5,6 +5,7 @@
 ![](https://gifdb.com/images/high/colorful-bouncing-update-text-3rtmoubg4wfovqho.gif)
 
 👉 A new version of Model AI For IDS is available
+
 - Model Non Label using LSTM --> [File](./IDS/ModelWithLabel/LSTM.py)
     - That will be base on the existing LSTM implementation, just renew some kind for like stuff work (CCIDS2017-Data and more ...)
     - LSTM implementation in OC model - easier to read and understand

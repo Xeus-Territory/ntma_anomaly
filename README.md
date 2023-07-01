@@ -22,8 +22,15 @@
 ## Requirements of project
 - 2 VM or more (including cadvisor, az-cli, node-exporter, docker, ...). Don't worry, Everything i relate and even have the manual in repo
 
-## Design Infrastructure: v0.0.1 <br>
+## Design Infrastructure: v0.1.0 <br>
 **Local Infra** <br>
 ![Alt text](Infrastructure/design/LocalInfra.drawio.png) <br>
 **Cloud Infra** <br>
 ![Alt text](Infrastructure/design/CloudInfra.drawio.png)
+
+# NTMA_Anomaly V0.2.0
+![Update](https://gifdb.com/images/high/colorful-bouncing-update-text-3rtmoubg4wfovqho.gif)
+- Have a new module for setup project with bash script `setup-all-ai.sh` or `setup-all-metric.sh`
+- Have a new script file for building a new image with bash script `docker-build-image.sh`
+
+## Design Infrastructure: v0.2.0 (Nothing have a bit changed since v0.1.0) <br>

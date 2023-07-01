@@ -1,0 +1,65 @@
+version: '3'
+
+networks:
+  wkernet:
+    driver: overlay
+
+services:
+  manager:
+    image: xeusnguyen/agent-script:v0.0.2
+    working_dir: /app/NTMA_Anomaly/Script/worker/python
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 500M
+      placement:
+        constraints:
+          - "node.role==manager"
+    entrypoint:
+      - python3
+      - node-manager.py
+    ports:
+      - 9999:9999
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./Infrastructure/docker/conf/nginx/nginx-default.conf:/app/NTMA_Anomaly/Infrastructure/docker/conf/nginx/nginx-default.conf
+      - ./Infrastructure/docker/conf/monitoring/prometheus/target/cadvisor.json:/app/NTMA_Anomaly/Infrastructure/docker/conf/monitoring/prometheus/target/cadvisor.json
+      - ./Infrastructure/docker/conf/monitoring/prometheus/target/fluentd.json:/app/NTMA_Anomaly/Infrastructure/docker/conf/monitoring/prometheus/target/fluentd.json
+      - ./Infrastructure/docker/conf/monitoring/prometheus/target/node-exporter.json:/app/NTMA_Anomaly/Infrastructure/docker/conf/monitoring/prometheus/target/node-exporter.json
+      - ./Infrastructure/docker/conf/monitoring/prometheus/target/nginx-exporter.json:/app/NTMA_Anomaly/Infrastructure/docker/conf/monitoring/prometheus/target/nginx-exporter.json
+      - ./Infrastructure/docker/conf/monitoring/prometheus/target/nginxlog-exporter.json:/app/NTMA_Anomaly/Infrastructure/docker/conf/monitoring/prometheus/target/nginxlog-exporter.json
+      - ./Infrastructure/docker/conf/nginx/ddos.conf:/app/NTMA_Anomaly/Infrastructure/docker/conf/nginx/ddos.conf
+
+    networks:
+      - wkernet
+
+  slave:
+    image: xeusnguyen/agent-script:v0.0.2
+    working_dir: /app/NTMA_Anomaly/Script/worker/python
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 500M
+      placement:
+        constraints:
+        - "node.role==worker"
+      mode: global
+    entrypoint:
+      - python3
+      - node-worker.py
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - manager
+    networks:
+      - wkernet

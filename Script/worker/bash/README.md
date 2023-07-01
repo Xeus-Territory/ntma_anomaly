@@ -54,8 +54,8 @@
 
     `./setup-swarm.sh <create|destroy|up|down>` (with create if you have 2 NIC: you need specify the name for create)
 
-6. setup-worker.sh: Do create, delete, start and stop for worker agent
+6. setup-worker.sh: Do start and stop for worker agent - 2 Mode is supported in V0.2.0
 
-    `./setup-worker.sh <create|destroy|up|down>`
+    `./setup-worker.sh <ai|metric> <up|down>`
 
 
