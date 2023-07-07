@@ -18,7 +18,7 @@ Design of KMeans IDS for Prediction Anomalies and Handling Firewall Passive
 ![Alt text](Design/KMeans-IDS.drawio.png)
 
 👉 A new version of Model AI For Forecasting metrics is available
-- Model Non Label using LSTM --> [File](./Forecase/training_model.py)
+- Model Non Label using LSTM --> [File](./Forecast/training_model.py)
     - The model utilizes data retrieved from calling the Prometheus API to extract specific data. This data will be processed and stored in a file format at [here](./Data/data_metrics/2023-06-13-06.csv)!
     - That module is available for use in Python 3, but it requires an env file to connect to Prometheus in order to access the API and collect data.
     - Require for run this model --> Huge resource will be use on init step for model 1-2Gb Rams (Need available) --> After that it will be stable and need resource when retrain model

@@ -5,7 +5,7 @@ abs_path_folder=$(dirname "$(realpath $0)")
 
 clone_visuallizer() {
 # Clone project from remote repository
-git clone https://github.com/dockersamples/docker-swarm-visualizer.git
+git clone https://github.com/dockersamples/docker-swarm-visualizer.git "$abs_path_folder/docker-swarm-visualizer"
 
 # Config port to exposed
 cat << EOF | tee "$abs_path_folder/docker-swarm-visualizer/docker-compose.yml" > /dev/null
@@ -42,19 +42,19 @@ if [[ "$1" == "create" ]]; then
         echo "The monitoring network really exist"
     fi
     { 
-        docker-compose -f docker-swarm-visualizer/docker-compose.yml up -d 
+        docker-compose -f "$abs_path_folder/docker-swarm-visualizer/docker-compose.yml" up -d 
     } || { 
         echo "Error: Cannot create docker-swarm-visualizer" && exit 1 
     }
     echo "Created docker-swarm-visullizer is successfully"
     if [ "$2" == "-n" ]; then
-        rm -rf docker-swarm-visualizer
+        rm -rf "$abs_path_folder/docker-swarm-visualizer"
         echo "Remove docker-swarm-visullizer folder is successfully"
         exit 0
     elif [[ "$2" == "" ]]; then
         read -p "Do you want to keep the folder docker-swarm-visualizer[y/n]? " choice
         if [[ $choice == "n" ]]; then
-            rm -rf docker-swarm-visualizer
+            rm -rf "$abs_path_folder/docker-swarm-visualizer"
             echo "Remove docker-swarm-visullizer folder is successfully"
             exit 0
         else

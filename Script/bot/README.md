@@ -84,8 +84,11 @@
 
 2. Common request for interaction mode
 
-    `python3 demand_bot.py -T interact -l localhost -d /items -m GET POST PUT DELETE -t 120 -s 30 -D {"name":"HelloWorld!!!"}`
+    `python3 demand_bot.py -T interact -l localhost -d /items -m GET POST PUT DELETE -t 120 -s 30 -D '{"name":"HelloWorld!!!"}'`
 
-3. Benchmarking
+3. Benchmarking<br>
+    **GET METHOD (LOAD BENCHMARK - Easy Take)**<br>
+    `python3 demand_bot.py -T benchmark -l localhost -d /items -m GET -t 0 -w 200 -n 10000`
 
-    `python3 demand_bot.py -T benchmark -l localhost -d /items -t 0 -w 100 -n 1000000`
+    **POST METHOD (DDOS POST && BENCHMARK - Hard Take)**<br>
+    `python3 demand_bot.py -T benchmark -l localhost -d /items -m POST -t 0 -w 200 -n 10000 -D '{"name":"HelloWorld!!!"}'`

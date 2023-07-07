@@ -13,6 +13,7 @@
 ## Run and configure:
 
     `python3 <file_you_want_to_executable>` (If you use log_process need specify where you store you log)
+---
 
 # Python script in V0.2.0
 ![Update](https://gifdb.com/images/high/colorful-bouncing-update-text-3rtmoubg4wfovqho.gif)

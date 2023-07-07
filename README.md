@@ -27,7 +27,7 @@
 ![Alt text](Infrastructure/design/LocalInfra.drawio.png) <br>
 **Cloud Infra** <br>
 ![Alt text](Infrastructure/design/CloudInfra.drawio.png)
-
+---
 # NTMA_Anomaly V0.2.0
 ![Update](https://gifdb.com/images/high/colorful-bouncing-update-text-3rtmoubg4wfovqho.gif)
 - Have a new module for setup project with bash script `setup-all-ai.sh` or `setup-all-metric.sh`

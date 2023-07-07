@@ -286,7 +286,7 @@ def __main__():
     parser.add_argument('-t', '--timeout', help='timoout give for bot in (seconds) [Valid with both mode]', type=int, default=30)
     parser.add_argument('-s', '--sleep', help='seconds to sleep for each request [Valid with interact Mode]', type=int, default=5)
     parser.add_argument('-D', '--data_templates', help='Data templates for post requests [Valid with interact Mode]' + 
-                                'Type: Dictionary. Example: {"name":"HelloWorld!!!"} ', type=dict, default={"name":"HelloWorld!!!"})
+                                'Type: Dictionary. Example: {"name":"HelloWorld!!!"} ', type=str ,default='{"name":"HelloWorld!!!"}')
     parser.add_argument('-w', '--workers', help='Number of workers or concurence level for doing a job', type=int, default=10)
     parser.add_argument('-n', '--number_requests', help='Number of requests for benchmarking', type=int, default=1000)
     opt = parser.parse_args()
@@ -297,32 +297,41 @@ def __main__():
     port = opt.port
     directory = [str(d) for d in opt.directory]
     if opt.type == "interact":
-        method = [str(m) for m in opt.method]
-        template = opt.data_templates
-        sleep_timeout = opt.sleep
-        results_interact, cost_time = interact_todo(method=method, location_uri=location_uri, port=port, protocol=protocol, dir_point=directory,
-                                         data_template=template, set_timeout=float(timeout), sleep_timeout=sleep_timeout)
-        print('Processing results: Succeed after ' + str(datetime.timedelta(seconds=(timeout-cost_time))) + "\n" + 
-              "Results:" + "\n" +
-              "\t- Total Requests: " + str(results_interact["Total Request"]) + "\n" +
-              "\t- Total 2xx Response: " + str(results_interact["2xx Response"]) + "\n" +
-              "\t- Total 3xx Response: " + str(results_interact["3xx Response"]) + "\n" +
-              "\t- Total 4xx Response: " + str(results_interact["4xx Response"]) + "\n" +
-              "\t- Total 5xx Response: " + str(results_interact["5xx Response"]) + "\n")
+        try:
+            method = [str(m) for m in opt.method]
+            template = json.loads(opt.data_templates)
+            sleep_timeout = opt.sleep
+            results_interact, cost_time = interact_todo(method=method, location_uri=location_uri, port=port, protocol=protocol, dir_point=directory,
+                                            data_template=template, set_timeout=float(timeout), sleep_timeout=sleep_timeout)
+            print('Processing results: Succeed after ' + str(datetime.timedelta(seconds=(timeout-cost_time))) + "\n" + 
+                "Results:" + "\n" +
+                "\t- Total Requests: " + str(results_interact["Total Request"]) + "\n" +
+                "\t- Total 2xx Response: " + str(results_interact["2xx Response"]) + "\n" +
+                "\t- Total 3xx Response: " + str(results_interact["3xx Response"]) + "\n" +
+                "\t- Total 4xx Response: " + str(results_interact["4xx Response"]) + "\n" +
+                "\t- Total 5xx Response: " + str(results_interact["5xx Response"]) + "\n")
+        except Exception as e:
+            print("Bot Exception occur while interact: ", e)
+            exit(1)
+            
     if opt.type == "benchmark":
-        method = [str(m) for m in opt.method]
-        template = opt.data_templates
-        if len(directory) != 1:
-            print("Multiple directories not supported for benchmark version, please specify the directory")
-        if len(directory) == 1:
-            if len(method) != 1:
-                print("Just one method is GET or POST is supported for benchmark")
-            else:
-                if method[0] == "PUT" or method[0] == "DELETE":
+        try:
+            method = [str(m) for m in opt.method]
+            template = json.loads(opt.data_templates)
+            if len(directory) != 1:
+                print("Multiple directories not supported for benchmark version, please specify the directory")
+            if len(directory) == 1:
+                if len(method) != 1:
                     print("Just one method is GET or POST is supported for benchmark")
                 else:
-                    benchmark_todo(location_uri=location_uri, port=port, protocol=protocol, dir_point=directory[0], 
-                                set_timeout=timeout, worker=opt.workers, number_requests=opt.number_requests, method=method[0], data_template=template)
+                    if method[0] == "PUT" or method[0] == "DELETE":
+                        print("Just one method is GET or POST is supported for benchmark")
+                    else:
+                        benchmark_todo(location_uri=location_uri, port=port, protocol=protocol, dir_point=directory[0], 
+                                    set_timeout=timeout, worker=opt.workers, number_requests=opt.number_requests, method=method[0], data_template=template)
+        except Exception as e:
+            print("Bot Exception occur while benchmarking: ", e)
+            exit(1)
                     
     if opt.type == "random":
         template = opt.data_templates
@@ -337,4 +346,8 @@ def __main__():
                 break                
         
 if __name__=='__main__':
-    __main__()
+    try:
+        __main__()
+    except KeyboardInterrupt:
+        print("Stop bot by KeyBoard")
+        exit(1)
