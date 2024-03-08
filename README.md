@@ -1,6 +1,8 @@
 # NTMA_Anomaly
 # Network Traffic Monitor and Analysis on anomaly detection for scaling infrastructure
 
+# NOTICE: Project is archived, new update can be available in [wouops](https://github.com/Xeus-Territory/wouops)
+
 *This repo is creature of by [@me](https://github.com/Xeus-Territory) and [@markpage2k1](https://github.com/MarkPage2k1). This is opensource, experimental and not have limited, so if you want contributed with me and mark, contact me.*
 
 ## Purpose:
